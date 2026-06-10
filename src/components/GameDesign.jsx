@@ -1,0 +1,341 @@
+import styles from './GameDesign.module.css';
+import { useScrollReveal } from '../hooks/useScrollReveal';
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const CHIPS = [
+  { label: '2–4 Players',      variant: 'neutral' },
+  { label: '60–120 min',       variant: 'neutral' },
+  { label: 'Engine-Building',  variant: 'neutral' },
+  { label: 'In Playtesting',   variant: 'accent'  },
+];
+
+const FEATURED_CARDS = [
+  {
+    name:      'Stargazer Lily',
+    tier:      'T3',
+    archetype: 'Flowering',
+    mechanic:  'End of season: place 3 Pollen tokens on adjacent plant spaces.',
+    flavor:    'Bred for spectacle. Built for the long season.',
+    artType:   'lily',
+  },
+  {
+    name:      'Sundew',
+    tier:      'T2',
+    archetype: 'Carnivorous',
+    mechanic:  'Trap — Trigger: when any insect card enters play, draw 1 card.',
+    flavor:    'The bog never hurries. The trap never misses.',
+    artType:   'sundew',
+  },
+  {
+    name:      'Honey Bee',
+    tier:      null,
+    archetype: 'Pollinator',
+    mechanic:  'Pollinate: move to any adjacent plant and transfer all Pollen tokens.',
+    flavor:    'Colony logic encoded in every foraging route.',
+    artType:   'bee',
+  },
+];
+
+const SPINOFFS = [
+  {
+    name:        'Perennial: Cultivar',
+    description: 'A focused 2-player variant built around hybrid breeding mechanics and head-to-head seasonal pressure.',
+    status:      'Concept',
+  },
+  {
+    name:        'Perennial: Succession',
+    description: 'Expansion introducing ecological succession — pioneer species, climax communities, and disturbance cascades.',
+    status:      'Concept',
+  },
+  {
+    name:        'Automa Solo Mode',
+    description: 'A fully modeled AI opponent that simulates competitive planting strategy — no second player required.',
+    status:      'In Design',
+  },
+];
+
+// ── Inline SVG art ────────────────────────────────────────────────────────────
+
+function LilyArt() {
+  const petals = [0, 60, 120, 180, 240, 300];
+  const stamens = [0, 40, -40, 20, -20];
+  return (
+    <svg className={styles.artSvg} viewBox="0 0 80 80" fill="none" aria-hidden="true">
+      {/* Petals */}
+      {petals.map(deg => (
+        <path
+          key={deg}
+          d="M40 12 C34 23 33 33 40 40 C47 33 46 23 40 12Z"
+          stroke="currentColor"
+          strokeWidth="0.9"
+          fill="currentColor"
+          fillOpacity="0.1"
+          transform={`rotate(${deg} 40 40)`}
+        />
+      ))}
+      {/* Stamens */}
+      {stamens.map((offset, i) => (
+        <line
+          key={i}
+          x1="40" y1="36"
+          x2="40" y2="22"
+          stroke="currentColor"
+          strokeWidth="0.7"
+          strokeLinecap="round"
+          transform={`rotate(${offset} 40 40)`}
+        />
+      ))}
+      {/* Stamen tips */}
+      {stamens.map((offset, i) => (
+        <circle
+          key={i}
+          cx="40" cy="22"
+          r="1.2"
+          fill="currentColor"
+          fillOpacity="0.7"
+          transform={`rotate(${offset} 40 40)`}
+        />
+      ))}
+      {/* Center */}
+      <circle cx="40" cy="40" r="5.5" stroke="currentColor" strokeWidth="0.9" fill="currentColor" fillOpacity="0.18" />
+      <circle cx="40" cy="40" r="2.5" fill="currentColor" fillOpacity="0.4" />
+    </svg>
+  );
+}
+
+function SundewArt() {
+  const count = 12;
+  const arms = Array.from({ length: count }, (_, i) => {
+    const angle = (i / count) * 2 * Math.PI - Math.PI / 2;
+    const innerR = 10;
+    const outerR = 28;
+    const dropR  = 32;
+    return {
+      x1:  40 + innerR * Math.cos(angle),
+      y1:  40 + innerR * Math.sin(angle),
+      x2:  40 + outerR * Math.cos(angle),
+      y2:  40 + outerR * Math.sin(angle),
+      dx:  40 + dropR  * Math.cos(angle),
+      dy:  40 + dropR  * Math.sin(angle),
+    };
+  });
+
+  return (
+    <svg className={styles.artSvg} viewBox="0 0 80 80" fill="none" aria-hidden="true">
+      {/* Inner rosette */}
+      <circle cx="40" cy="40" r="10" stroke="currentColor" strokeWidth="0.9" fill="currentColor" fillOpacity="0.1" />
+      <circle cx="40" cy="40" r="4"  fill="currentColor" fillOpacity="0.25" />
+      {/* Tentacle arms */}
+      {arms.map(({ x1, y1, x2, y2 }, i) => (
+        <line
+          key={i}
+          x1={x1.toFixed(1)} y1={y1.toFixed(1)}
+          x2={x2.toFixed(1)} y2={y2.toFixed(1)}
+          stroke="currentColor"
+          strokeWidth="0.8"
+          strokeLinecap="round"
+        />
+      ))}
+      {/* Dew drops at tips */}
+      {arms.map(({ dx, dy }, i) => (
+        <circle
+          key={i}
+          cx={dx.toFixed(1)} cy={dy.toFixed(1)}
+          r="1.8"
+          fill="currentColor"
+          fillOpacity="0.55"
+        />
+      ))}
+    </svg>
+  );
+}
+
+function BeeArt() {
+  // Flat-top hexagons, r = 12
+  const r = 12;
+  function hexPoints(cx, cy) {
+    return [0, 60, 120, 180, 240, 300]
+      .map(deg => {
+        const rad = deg * Math.PI / 180;
+        return `${(cx + r * Math.cos(rad)).toFixed(1)},${(cy + r * Math.sin(rad)).toFixed(1)}`;
+      })
+      .join(' ');
+  }
+
+  // 7-cell honeycomb: center + 6 neighbors
+  const dX = 2 * r;             // 24
+  const dY = r * Math.sqrt(3);  // ≈ 20.78
+  const cells = [
+    [40,          40        ],   // center (filled)
+    [40 + dX,     40        ],   // right
+    [40 - dX,     40        ],   // left
+    [40 + r,      40 - dY   ],   // upper-right
+    [40 - r,      40 - dY   ],   // upper-left
+    [40 + r,      40 + dY   ],   // lower-right
+    [40 - r,      40 + dY   ],   // lower-left
+  ];
+
+  return (
+    <svg className={styles.artSvg} viewBox="0 0 80 80" fill="none" aria-hidden="true">
+      {cells.map(([cx, cy], i) => (
+        <polygon
+          key={i}
+          points={hexPoints(cx, cy)}
+          stroke="currentColor"
+          strokeWidth="0.9"
+          fill="currentColor"
+          fillOpacity={i === 0 ? 0.18 : 0.05}
+        />
+      ))}
+      {/* Simple bee body in center cell */}
+      <ellipse cx="40" cy="39" rx="3.5" ry="5.5" fill="currentColor" fillOpacity="0.5" />
+      <ellipse cx="40" cy="34" rx="3"   ry="3"   fill="currentColor" fillOpacity="0.4" />
+      {/* Wings */}
+      <ellipse cx="35" cy="37" rx="4.5" ry="2.5" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="0.5" transform="rotate(-20 35 37)" />
+      <ellipse cx="45" cy="37" rx="4.5" ry="2.5" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="0.5" transform="rotate(20 45 37)"  />
+    </svg>
+  );
+}
+
+// ── Card placeholder ──────────────────────────────────────────────────────────
+
+function CardPlaceholder({ card }) {
+  return (
+    <article className={styles.card} data-art={card.artType}>
+      <div className={styles.cardArt}>
+        <div className={styles.artIllustration}>
+          {card.artType === 'lily'   && <LilyArt />}
+          {card.artType === 'sundew' && <SundewArt />}
+          {card.artType === 'bee'    && <BeeArt />}
+        </div>
+
+        {/* Art-zone overlays */}
+        <div className={styles.artMeta}>
+          {card.tier && <span className={styles.tierBadge}>{card.tier}</span>}
+          <span className={styles.archetypeTag}>{card.archetype}</span>
+        </div>
+      </div>
+
+      <div className={styles.cardBody}>
+        <h3 className={styles.cardName}>{card.name}</h3>
+        <p  className={styles.cardMechanic}>{card.mechanic}</p>
+        <p  className={styles.cardFlavor}>"{card.flavor}"</p>
+      </div>
+    </article>
+  );
+}
+
+// ── Spinoff card ──────────────────────────────────────────────────────────────
+
+function SpinoffCard({ spinoff }) {
+  return (
+    <div className={styles.spinoff}>
+      <span className={`${styles.statusChip} ${
+        spinoff.status === 'In Design' ? styles.chipAccent : styles.chipNeutral
+      }`}>
+        {spinoff.status}
+      </span>
+      <h4 className={styles.spinoffName}>{spinoff.name}</h4>
+      <p  className={styles.spinoffDesc}>{spinoff.description}</p>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function GameDesign() {
+  const [containerRef, revealed] = useScrollReveal();
+  return (
+    <section id="game-design" className={styles.section} data-accent="botanical">
+      <div className={styles.container} ref={containerRef} data-reveal={revealed ? 'true' : 'false'}>
+
+        {/* ── Section header ── */}
+        <header className={styles.sectionTop}>
+          <span className={styles.eyebrow}>GAME DESIGN</span>
+          <h2 className={styles.heading}>Perennial: A Cultivar Anthology</h2>
+          <p className={styles.subhead}>
+            A botanical engine-building card game for 2–4 players.
+            Standalone box. 60–120 minutes.
+          </p>
+
+          <div className={styles.chips} role="list" aria-label="Game details">
+            {CHIPS.map(({ label, variant }) => (
+              <span
+                key={label}
+                role="listitem"
+                className={`${styles.chip} ${variant === 'accent' ? styles.chipAccent : styles.chipNeutral}`}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </header>
+
+        {/* ── Pitch block ── */}
+        <div className={styles.pitch} aria-label="Ten growing seasons. Four biomes. Ecological accuracy in every mechanic.">
+          <div className={styles.pitchStat} aria-hidden="true">
+            <span className={styles.pitchNumber}>10</span>
+            <span className={styles.pitchLabel}>Growing Seasons</span>
+          </div>
+          <div className={styles.pitchDivider} aria-hidden="true" />
+          <div className={styles.pitchStat} aria-hidden="true">
+            <span className={styles.pitchNumber}>4</span>
+            <span className={styles.pitchLabel}>Biomes</span>
+          </div>
+          <div className={styles.pitchDivider} aria-hidden="true" />
+          <div className={styles.pitchStatement} aria-hidden="true">
+            <span className={styles.pitchText}>
+              Ecological accuracy<br />in every mechanic.
+            </span>
+          </div>
+        </div>
+
+        {/* ── Featured cards ── */}
+        <div className={styles.cardGrid} role="list" aria-label="Featured cards">
+          {FEATURED_CARDS.map(card => (
+            <div key={card.name} role="listitem">
+              <CardPlaceholder card={card} />
+            </div>
+          ))}
+        </div>
+
+        {/* ── Universe divider ── */}
+        <div className={styles.universeDivider} aria-hidden="true">
+          <span className={styles.universeDividerLine} />
+          <span className={styles.universeDividerLabel}>The Perennial Universe</span>
+          <span className={styles.universeDividerLine} />
+        </div>
+
+        {/* ── Spinoffs ── */}
+        <div className={styles.universeBlock}>
+          <header className={styles.universeHeader}>
+            <h3 className={styles.universeHeading}>Expansions &amp; Spinoffs</h3>
+            <p className={styles.universeSubhead}>
+              Perennial is designed as a universe, not a single game.
+            </p>
+          </header>
+
+          <div className={styles.spinoffs} role="list" aria-label="Spinoffs and expansions">
+            {SPINOFFS.map(s => (
+              <div key={s.name} role="listitem">
+                <SpinoffCard spinoff={s} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── CTAs ── */}
+        <div className={styles.ctas}>
+          <button className={styles.ctaPrimary}>
+            Join the playtester list →
+          </button>
+          <button className={styles.ctaOutline}>
+            Notify me: Kickstarter →
+          </button>
+        </div>
+
+      </div>
+    </section>
+  );
+}

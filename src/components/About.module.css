@@ -1,0 +1,374 @@
+/* ─── Section shell ─── */
+.section {
+  padding: var(--space-5xl) var(--space-xl);
+}
+
+.container {
+  max-width: var(--max-width);
+  margin-inline: auto;
+}
+
+/* ═══════════════════════════════════════════
+   SECTION HEADER
+═══════════════════════════════════════════ */
+.sectionTop {
+  margin-bottom: var(--space-3xl);
+}
+
+.eyebrow {
+  display:        inline-block;
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-cerulean);
+  margin-bottom:  var(--space-sm);
+}
+
+.heading {
+  font-family:    var(--font-serif);
+  font-size:      var(--text-h2);
+  font-weight:    300;
+  letter-spacing: var(--tracking-tight);
+  color:          var(--color-parchment);
+  line-height:    var(--leading-heading);
+  margin:         0;
+}
+
+/* ═══════════════════════════════════════════
+   BIO BLOCK — photo + text two-column
+═══════════════════════════════════════════ */
+.bioBlock {
+  display:               grid;
+  grid-template-columns: 300px 1fr;
+  gap:                   var(--space-3xl);
+  margin-bottom:         var(--space-4xl);
+  align-items:           start;
+}
+
+/* ─── Photo side ─── */
+.photoWrap {
+  position: sticky;
+  top:      calc(80px + var(--space-lg));
+}
+
+.photoPlaceholder {
+  width:         100%;
+  aspect-ratio:  3 / 4;
+  background:    linear-gradient(
+    145deg,
+    var(--color-ash)     0%,
+    var(--color-charcoal) 100%
+  );
+  border:        1px solid rgba(107, 146, 188, 0.2);
+  border-radius: var(--radius-lg);
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  overflow:      hidden;
+  position:      relative;
+}
+
+/* Subtle cerulean glow in top-left corner */
+.photoPlaceholder::before {
+  content:  '';
+  position: absolute;
+  inset:    0;
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(107, 146, 188, 0.08) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.initials {
+  font-family:    var(--font-serif);
+  font-size:      clamp(4rem, 8vw, 5.5rem);
+  font-weight:    300;
+  letter-spacing: var(--tracking-tight);
+  color:          var(--accent-cerulean);
+  opacity:        0.3;
+  user-select:    none;
+  position:       relative;
+  z-index:        1;
+}
+
+/* Location block below photo */
+.locationBlock {
+  display:     flex;
+  align-items: flex-start;
+  gap:         var(--space-xs);
+  margin-top:  var(--space-md);
+}
+
+.locationIcon {
+  color:      var(--accent-cerulean);
+  opacity:    0.6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.locationCity {
+  font-family:  var(--font-sans);
+  font-size:    var(--text-small);
+  font-weight:  500;
+  color:        var(--color-silver);
+  margin:       0 0 2px;
+}
+
+.locationNote {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--color-dust);
+  margin:         0;
+  line-height:    var(--leading-body);
+}
+
+/* ─── Text side ─── */
+.textSide {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2xl);
+}
+
+.bio {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-md);
+}
+
+.bioPara {
+  font-family: var(--font-sans);
+  font-size:   var(--text-body-xl);
+  font-weight: 300;
+  color:       var(--color-silver);
+  line-height: var(--leading-body);
+  margin:      0;
+}
+
+.bioPara strong {
+  color:       var(--color-parchment);
+  font-weight: 500;
+}
+
+/* ─── Role chips ─── */
+.rolesBlock {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-sm);
+}
+
+.rolesLabel {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-cerulean);
+}
+
+.roleChips {
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        var(--space-xs);
+  list-style: none;
+  padding:    0;
+  margin:     0;
+}
+
+.roleChip {
+  display:        inline-block;
+  padding:        5px var(--space-sm);
+  border-radius:  var(--radius-pill);
+  font-family:    var(--font-sans);
+  font-size:      var(--text-small);
+  font-weight:    500;
+  color:          var(--pastel-cerulean);
+  background:     var(--tint-cerulean-08);
+  border:         1px solid rgba(107, 146, 188, 0.22);
+  white-space:    nowrap;
+  transition:     background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.roleChip:hover {
+  background:   var(--tint-cerulean-15);
+  border-color: rgba(107, 146, 188, 0.4);
+  color:        var(--accent-cerulean);
+}
+
+/* ═══════════════════════════════════════════
+   SKILLS BLOCK
+═══════════════════════════════════════════ */
+.skillsBlock {
+  padding-top:   var(--space-3xl);
+  border-top:    1px solid var(--color-ember-edge);
+  margin-bottom: var(--space-3xl);
+  display:       flex;
+  flex-direction: column;
+  gap:            var(--space-xl);
+}
+
+.skillsEyebrow {
+  display:        inline-block;
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-cerulean);
+}
+
+.skillsGrid {
+  display:               grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:                   var(--space-xl);
+}
+
+.skillGroup {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-sm);
+}
+
+.skillCategory {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--color-dust);
+}
+
+.skillTags {
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        6px;
+  list-style: none;
+  padding:    0;
+  margin:     0;
+}
+
+.skillTag {
+  display:       inline-block;
+  padding:       3px 10px;
+  border-radius: var(--radius-sm);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-small);
+  font-weight:   400;
+  color:         var(--color-silver);
+  background:    var(--color-charcoal);
+  border:        1px solid var(--color-ember-edge);
+  line-height:   var(--leading-body);
+  white-space:   nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   CONTACT ROW
+═══════════════════════════════════════════ */
+.contactBlock {
+  padding-top: var(--space-2xl);
+  border-top:  1px solid var(--color-ember-edge);
+}
+
+.contactList {
+  display:     flex;
+  flex-wrap:   wrap;
+  gap:         var(--space-lg);
+  align-items: center;
+  list-style:  none;
+  padding:     0;
+  margin:      0;
+}
+
+.contactItem {
+  display:         flex;
+  align-items:     center;
+  gap:             var(--space-xs);
+  font-family:     var(--font-sans);
+  font-size:       var(--text-body);
+  font-weight:     400;
+  color:           var(--color-silver);
+  text-decoration: none;
+  transition:      color 0.2s ease;
+}
+
+.contactItem:hover {
+  color: var(--accent-cerulean);
+}
+
+.contactItem:hover .contactIcon {
+  opacity: 1;
+}
+
+.contactIcon {
+  color:       var(--accent-cerulean);
+  opacity:     0.65;
+  flex-shrink: 0;
+  display:     flex;
+  align-items: center;
+  transition:  opacity 0.2s ease;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  .bioBlock {
+    grid-template-columns: 240px 1fr;
+    gap:                   var(--space-2xl);
+  }
+
+  .skillsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap:                   var(--space-lg);
+  }
+}
+
+@media (max-width: 767px) {
+  .section {
+    padding: var(--space-3xl) var(--space-sm);
+  }
+
+  .sectionTop {
+    margin-bottom: var(--space-xl);
+  }
+
+  .bioBlock {
+    grid-template-columns: 1fr;
+    gap:                   var(--space-xl);
+  }
+
+  .photoWrap {
+    position: static;
+  }
+
+  .photoPlaceholder {
+    max-width: 200px;
+    margin-inline: auto;
+  }
+
+  .locationBlock {
+    justify-content: center;
+  }
+
+  .skillsGrid {
+    grid-template-columns: 1fr;
+    gap:                   var(--space-lg);
+  }
+
+  .contactList {
+    flex-direction: column;
+    align-items:    flex-start;
+    gap:            var(--space-sm);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .bioBlock {
+    grid-template-columns: 260px 1fr;
+  }
+}

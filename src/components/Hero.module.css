@@ -1,0 +1,320 @@
+/* ─── Hero shell ─── */
+.hero {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  /* Push content below the fixed nav (~60px) without hard-coding px */
+  padding-top: var(--space-2xl);
+}
+
+/* ─── Main content area ─── */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-xl) var(--space-xl) var(--space-2xl);
+  gap: var(--space-md);
+}
+
+/* ─── Staggered fade-up on load ─── */
+.location,
+.name,
+.discipline,
+.tagline,
+.scrollHint {
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.location    { animation-delay: 0.05s; }
+.name        { animation-delay: 0.15s; }
+.discipline  { animation-delay: 0.25s; }
+.tagline     { animation-delay: 0.35s; }
+.scrollHint  { animation-delay: 0.6s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Location eyebrow ─── */
+.location {
+  font-family: var(--font-sans);
+  font-size: var(--text-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-dust);
+}
+
+/* ─── Display name ─── */
+.name {
+  font-family: var(--font-serif);
+  font-size: var(--text-display);
+  font-weight: 300;
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-parchment);
+  margin: 0; /* override global h1 */
+}
+
+/* ─── Color-coded discipline line ─── */
+.discipline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
+  font-family: var(--font-sans);
+  font-size: clamp(0.6875rem, 1.4vw, 0.9375rem);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.disciplineGame    { color: var(--accent-botanical); }
+.disciplineAI      { color: var(--accent-gold); }
+.disciplineArtisan { color: var(--accent-ember); }
+
+.sep {
+  color: var(--color-ghost);
+  letter-spacing: 0;
+  user-select: none;
+}
+
+/* ─── Tagline ─── */
+.tagline {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-xl);
+  font-weight: 300;
+  color: var(--color-silver);
+  max-width: 480px;
+  line-height: var(--leading-body);
+  margin: 0;
+}
+
+/* ─── Scroll hint ─── */
+.scrollHint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.scrollLine {
+  display: block;
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--color-ghost));
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+
+.scrollLabel {
+  font-family: var(--font-sans);
+  font-size: var(--text-eyebrow);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ghost);
+}
+
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(0.8); transform-origin: top; }
+  50%       { opacity: 1;   transform: scaleY(1);   transform-origin: top; }
+}
+
+/* ─────────────────────────────────────────
+   Entry cards
+───────────────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--color-ember-edge);
+}
+
+/* ─── Card wrapper (border management) ─── */
+.cardItem {
+  border-right: 1px solid var(--color-ember-edge);
+}
+
+.cardItem:last-child {
+  border-right: none;
+}
+
+/* ─── Card button ─── */
+.card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-lg) var(--space-md);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.25s ease;
+  /* Ensure consistent card height */
+  min-height: 180px;
+}
+
+/* Accent bar — slides in from left on hover */
+.card::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card[data-accent="gold"]::before      { background: var(--accent-gold); }
+.card[data-accent="botanical"]::before { background: var(--accent-botanical); }
+.card[data-accent="ember"]::before     { background: var(--accent-ember); }
+.card[data-accent="cerulean"]::before  { background: var(--accent-cerulean); }
+
+.card:hover::before,
+.card:focus-visible::before {
+  transform: scaleX(1);
+}
+
+/* Hover background tint */
+.card[data-accent="gold"]:hover,
+.card[data-accent="gold"]:focus-visible      { background: var(--tint-gold-08); }
+.card[data-accent="botanical"]:hover,
+.card[data-accent="botanical"]:focus-visible { background: var(--tint-botanical-08); }
+.card[data-accent="ember"]:hover,
+.card[data-accent="ember"]:focus-visible     { background: var(--tint-ember-08); }
+.card[data-accent="cerulean"]:hover,
+.card[data-accent="cerulean"]:focus-visible  { background: var(--tint-cerulean-08); }
+
+/* ─── Card eyebrow ─── */
+.cardEyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.card[data-accent="gold"]      .cardEyebrow { color: var(--accent-gold); }
+.card[data-accent="botanical"] .cardEyebrow { color: var(--accent-botanical); }
+.card[data-accent="ember"]     .cardEyebrow { color: var(--accent-ember); }
+.card[data-accent="cerulean"]  .cardEyebrow { color: var(--accent-cerulean); }
+
+/* ─── Card heading ─── */
+.cardHeading {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: var(--text-h3);
+  font-weight: 300;
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-parchment);
+  transition: color 0.2s ease;
+}
+
+/* ─── Card descriptor ─── */
+.cardDescriptor {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  color: var(--color-dust);
+  line-height: var(--leading-body);
+  flex: 1;
+}
+
+/* ─── Card arrow ─── */
+.cardArrow {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  color: var(--color-ghost);
+  align-self: flex-end;
+  transition: transform 0.25s ease, color 0.2s ease;
+  line-height: 1;
+}
+
+.card:hover .cardArrow,
+.card:focus-visible .cardArrow {
+  transform: translateX(5px);
+}
+
+.card[data-accent="gold"]:hover .cardArrow,
+.card[data-accent="gold"]:focus-visible .cardArrow      { color: var(--accent-gold); }
+.card[data-accent="botanical"]:hover .cardArrow,
+.card[data-accent="botanical"]:focus-visible .cardArrow { color: var(--accent-botanical); }
+.card[data-accent="ember"]:hover .cardArrow,
+.card[data-accent="ember"]:focus-visible .cardArrow     { color: var(--accent-ember); }
+.card[data-accent="cerulean"]:hover .cardArrow,
+.card[data-accent="cerulean"]:focus-visible .cardArrow  { color: var(--accent-cerulean); }
+
+/* ─────────────────────────────────────────
+   Responsive
+───────────────────────────────────────── */
+@media (max-width: 639px) {
+  .content {
+    padding: var(--space-lg) var(--space-sm) var(--space-xl);
+    gap: var(--space-sm);
+  }
+
+  .tagline {
+    font-size: var(--text-body);
+  }
+
+  .scrollHint {
+    display: none;
+  }
+}
+
+/* Mobile: 2×2 card grid */
+@media (max-width: 767px) {
+  .cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Reset desktop border logic */
+  .cardItem {
+    border-right: 1px solid var(--color-ember-edge);
+    border-bottom: 1px solid var(--color-ember-edge);
+  }
+
+  /* Right column: no right border */
+  .cardItem:nth-child(2n) {
+    border-right: none;
+  }
+
+  /* Bottom row: no bottom border */
+  .cardItem:nth-last-child(-n+2) {
+    border-bottom: none;
+  }
+
+  .card {
+    min-height: 160px;
+    padding: var(--space-md) var(--space-sm);
+  }
+}
+
+/* Tablet and up: restore 4-col layout */
+@media (min-width: 768px) {
+  .cardItem {
+    border-bottom: none;
+  }
+}
+
+/* Compact content height on short viewports */
+@media (max-height: 600px) {
+  .content {
+    justify-content: flex-start;
+    padding-top: var(--space-xl);
+  }
+
+  .scrollHint {
+    display: none;
+  }
+}

@@ -1,0 +1,558 @@
+/* ─── Section shell ─── */
+.section {
+  padding: var(--space-5xl) var(--space-xl);
+  min-height: 100dvh;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin-inline: auto;
+}
+
+/* ─── Section header ─── */
+.sectionTop {
+  margin-bottom: var(--space-3xl);
+}
+
+.eyebrow {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: var(--text-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  margin-bottom: var(--space-sm);
+}
+
+.heading {
+  font-family: var(--font-serif);
+  font-size: var(--text-h2);
+  font-weight: 300;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-parchment);
+  line-height: var(--leading-heading);
+  margin-bottom: var(--space-sm);
+}
+
+.subhead {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-xl);
+  font-weight: 300;
+  color: var(--color-silver);
+  max-width: 560px;
+  line-height: var(--leading-body);
+}
+
+/* chat-mode meta line */
+.chatMeta {
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  color: var(--color-dust);
+}
+
+.chatMeta strong {
+  color: var(--color-parchment);
+  font-weight: 500;
+}
+
+.jdBadge {
+  color: var(--accent-gold);
+  margin-left: var(--space-2xs);
+}
+
+/* ─── Two-column gate layout ─── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+/* ════════════════════════════════════════════
+   GATE FORM
+════════════════════════════════════════════ */
+.formSide {
+  /* stays left column */
+}
+
+.formStep {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--space-xl);
+}
+
+.stepLabel {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--text-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-dust);
+  margin-bottom: var(--space-md);
+}
+
+.optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-ghost);
+}
+
+/* ─── Field ─── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  margin-bottom: var(--space-md);
+}
+
+.label {
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: 500;
+  color: var(--color-silver);
+}
+
+.input,
+.textarea {
+  background:  var(--color-ash);
+  border:      1px solid var(--color-ember-edge);
+  border-radius: var(--radius-md);
+  padding:     var(--space-xs) var(--space-sm);
+  font-family: var(--font-sans);
+  font-size:   var(--text-body);
+  color:       var(--color-parchment);
+  transition:  border-color 0.2s ease, box-shadow 0.2s ease;
+  width:       100%;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--color-ghost);
+}
+
+.input:focus,
+.textarea:focus {
+  border-color: var(--accent-gold);
+  box-shadow:   0 0 0 3px rgba(212, 168, 63, 0.12);
+  outline:      none;
+}
+
+.inputErr {
+  border-color: var(--accent-ember);
+}
+
+.inputErr:focus {
+  border-color: var(--accent-ember);
+  box-shadow:   0 0 0 3px rgba(201, 107, 66, 0.12);
+}
+
+.inputOk {
+  border-color: var(--accent-botanical);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: var(--leading-body);
+}
+
+/* ─── Error / success messages ─── */
+.errMsg {
+  font-family: var(--font-sans);
+  font-size:   var(--text-small);
+  color:       var(--accent-ember);
+}
+
+.okMsg {
+  font-family: var(--font-sans);
+  font-size:   var(--text-small);
+  color:       var(--accent-botanical);
+}
+
+/* ─── URL row ─── */
+.urlRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-xs);
+}
+
+/* ─── Fetch button ─── */
+.fetchBtn {
+  padding:       var(--space-xs) var(--space-sm);
+  background:    var(--color-charcoal);
+  border:        1px solid var(--color-ember-edge);
+  border-radius: var(--radius-md);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-small);
+  font-weight:   500;
+  color:         var(--color-silver);
+  white-space:   nowrap;
+  transition:    background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.fetchBtn:hover:not(:disabled) {
+  background:    var(--tint-gold-15);
+  border-color:  var(--accent-gold);
+  color:         var(--accent-gold);
+}
+
+.fetchBtn:disabled {
+  opacity: 0.45;
+  cursor:  not-allowed;
+}
+
+.fetchBtnOk {
+  border-color: var(--accent-botanical);
+  color:        var(--accent-botanical);
+}
+
+/* ─── Toggle paste link ─── */
+.toggleLink {
+  font-family: var(--font-sans);
+  font-size:   var(--text-small);
+  color:       var(--color-dust);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition:  color 0.2s ease;
+  align-self:  flex-start;
+}
+
+.toggleLink:hover {
+  color: var(--accent-gold);
+}
+
+/* ─── CTA button ─── */
+.ctaBtn {
+  width:         100%;
+  padding:       var(--space-sm) var(--space-md);
+  background:    var(--accent-gold);
+  border-radius: var(--radius-md);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-body);
+  font-weight:   600;
+  color:         var(--color-obsidian);
+  letter-spacing: 0.01em;
+  transition:    background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow:    var(--shadow-sm);
+  margin-top:    var(--space-sm);
+}
+
+.ctaBtn:hover {
+  background:  var(--pastel-gold);
+  box-shadow:  var(--shadow-md);
+  transform:   translateY(-1px);
+}
+
+.ctaBtn:active {
+  transform: translateY(0);
+}
+
+/* ════════════════════════════════════════════
+   LOCKED PREVIEW
+════════════════════════════════════════════ */
+.previewSide {
+  position: sticky;
+  top: calc(var(--space-xl) + 60px); /* stay visible while scrolling form */
+}
+
+.previewShell {
+  position: relative;
+  border:        1px solid var(--color-ember-edge);
+  border-radius: var(--radius-lg);
+  background:    var(--color-charcoal);
+  overflow:      hidden;
+  min-height:    380px;
+}
+
+.previewMessages {
+  padding:         var(--space-md);
+  display:         flex;
+  flex-direction:  column;
+  gap:             var(--space-sm);
+  filter:          blur(3px);
+  pointer-events:  none;
+  user-select:     none;
+}
+
+.lockOverlay {
+  position: absolute;
+  inset:    0;
+  display:  flex;
+  flex-direction: column;
+  align-items:    center;
+  justify-content: center;
+  gap:      var(--space-sm);
+  background: rgba(20, 18, 16, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.lockIcon {
+  color:   var(--accent-gold);
+  opacity: 0.8;
+}
+
+.lockText {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-small);
+  font-weight:    500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--color-dust);
+  margin:         0;
+}
+
+/* ════════════════════════════════════════════
+   MESSAGE BUBBLES (shared: gate preview + chat view)
+════════════════════════════════════════════ */
+.bubble {
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--space-2xs);
+  max-width:     88%;
+}
+
+.bubbleAI {
+  align-self: flex-start;
+}
+
+.bubbleUser {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.bubbleLabel {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-gold);
+}
+
+.bubbleText {
+  margin:        0;
+  padding:       var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-body);
+  line-height:   var(--leading-body);
+  white-space:   pre-wrap;
+  word-break:    break-word;
+}
+
+.bubbleAI .bubbleText {
+  background:   var(--color-ash);
+  border:       1px solid var(--color-ember-edge);
+  color:        var(--color-parchment);
+  border-top-left-radius: var(--radius-sm);
+}
+
+.bubbleUser .bubbleText {
+  background: var(--tint-gold-15);
+  border:     1px solid rgba(212, 168, 63, 0.25);
+  color:      var(--color-parchment);
+  border-top-right-radius: var(--radius-sm);
+}
+
+/* ─── Streaming cursor ─── */
+.cursor {
+  display:      inline-block;
+  width:        2px;
+  height:       1em;
+  background:   var(--accent-gold);
+  border-radius: 1px;
+  vertical-align: text-bottom;
+  animation:    blink 0.9s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ════════════════════════════════════════════
+   CHAT SHELL (active state)
+════════════════════════════════════════════ */
+.chatShell {
+  border:        1px solid var(--color-ember-edge);
+  border-radius: var(--radius-lg);
+  background:    var(--color-charcoal);
+  display:       flex;
+  flex-direction: column;
+  overflow:      hidden;
+  box-shadow:    var(--shadow-md);
+}
+
+.messageList {
+  flex:       1;
+  overflow-y: auto;
+  padding:    var(--space-md);
+  display:    flex;
+  flex-direction: column;
+  gap:        var(--space-md);
+  max-height: 56vh;
+  min-height: 320px;
+  scroll-behavior: smooth;
+}
+
+.messageList::-webkit-scrollbar       { width: 4px; }
+.messageList::-webkit-scrollbar-track { background: transparent; }
+.messageList::-webkit-scrollbar-thumb {
+  background:    var(--color-ember-edge);
+  border-radius: var(--radius-pill);
+}
+
+/* ─── Input bar ─── */
+.inputBar {
+  display:      flex;
+  gap:          var(--space-xs);
+  padding:      var(--space-sm) var(--space-md);
+  border-top:   1px solid var(--color-ember-edge);
+  background:   var(--color-charcoal);
+}
+
+.chatInput {
+  flex:          1;
+  background:    var(--color-ash);
+  border:        1px solid var(--color-ember-edge);
+  border-radius: var(--radius-md);
+  padding:       var(--space-xs) var(--space-sm);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-body);
+  color:         var(--color-parchment);
+  transition:    border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chatInput::placeholder { color: var(--color-ghost); }
+
+.chatInput:focus {
+  border-color: var(--accent-gold);
+  box-shadow:   0 0 0 3px rgba(212, 168, 63, 0.12);
+  outline:      none;
+}
+
+.chatInput:disabled {
+  opacity: 0.6;
+}
+
+.sendBtn {
+  padding:       var(--space-xs) var(--space-md);
+  background:    var(--accent-gold);
+  border-radius: var(--radius-md);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-small);
+  font-weight:   600;
+  color:         var(--color-obsidian);
+  white-space:   nowrap;
+  transition:    background 0.2s ease, opacity 0.2s ease;
+}
+
+.sendBtn:hover:not(:disabled) {
+  background: var(--pastel-gold);
+}
+
+.sendBtn:disabled {
+  opacity: 0.4;
+  cursor:  not-allowed;
+}
+
+/* ════════════════════════════════════════════
+   POST-CTA
+════════════════════════════════════════════ */
+.postCta {
+  margin-top:  var(--space-xl);
+  padding:     var(--space-lg) var(--space-xl);
+  border:      1px solid rgba(212, 168, 63, 0.25);
+  border-radius: var(--radius-lg);
+  background:  var(--tint-gold-08);
+  display:     flex;
+  align-items: center;
+  justify-content: space-between;
+  gap:         var(--space-md);
+  flex-wrap:   wrap;
+}
+
+.postCtaHeadline {
+  font-family: var(--font-serif);
+  font-size:   var(--text-h3);
+  font-weight: 300;
+  letter-spacing: var(--tracking-tight);
+  color:       var(--color-parchment);
+  margin:      0;
+}
+
+.postCtaLink {
+  display:       inline-block;
+  padding:       var(--space-xs) var(--space-md);
+  background:    var(--accent-gold);
+  border-radius: var(--radius-md);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-small);
+  font-weight:   600;
+  color:         var(--color-obsidian);
+  white-space:   nowrap;
+  transition:    background 0.2s ease, transform 0.15s ease;
+}
+
+.postCtaLink:hover {
+  background: var(--pastel-gold);
+  transform:  translateY(-1px);
+}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .previewSide {
+    position: static;
+    order: -1; /* preview above form on tablet */
+  }
+
+  .previewShell {
+    min-height: 260px;
+  }
+}
+
+@media (max-width: 767px) {
+  .section {
+    padding: var(--space-3xl) var(--space-sm);
+  }
+
+  .sectionTop {
+    margin-bottom: var(--space-xl);
+  }
+
+  .previewSide {
+    display: none; /* hide preview on small mobile */
+  }
+
+  .messageList {
+    max-height: 50vh;
+  }
+
+  .postCta {
+    flex-direction: column;
+    align-items:    flex-start;
+    padding:        var(--space-md);
+  }
+}
+
+/* Very small screens — stack URL input + fetch button */
+@media (max-width: 479px) {
+  .urlRow {
+    grid-template-columns: 1fr;
+  }
+
+  .fetchBtn {
+    width:      100%;
+    text-align: center;
+  }
+}

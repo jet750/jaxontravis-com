@@ -1,0 +1,132 @@
+.footer {
+  background:  var(--color-obsidian);
+  border-top:  1px solid var(--color-ember-edge);
+  padding:     var(--space-2xl) var(--space-xl) var(--space-xl);
+}
+
+.inner {
+  max-width:      var(--max-width);
+  margin-inline:  auto;
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-xl);
+}
+
+/* ─── Top row: brand · nav · social ─── */
+.top {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-xl);
+}
+
+.brand {
+  font-family:    var(--font-serif);
+  font-size:      var(--text-body-xl);
+  font-weight:    400;
+  letter-spacing: var(--tracking-tight);
+  color:          var(--color-parchment);
+  background:     none;
+  border:         none;
+  cursor:         pointer;
+  padding:        0;
+  white-space:    nowrap;
+  transition:     color 0.2s ease;
+}
+
+.brand:hover {
+  color: var(--accent-cerulean);
+}
+
+.nav {
+  display:         flex;
+  align-items:     center;
+  gap:             var(--space-md);
+  flex:            1;
+  justify-content: center;
+  flex-wrap:       wrap;
+}
+
+.navLink {
+  background:     none;
+  border:         none;
+  cursor:         pointer;
+  font-family:    var(--font-sans);
+  font-size:      var(--text-small);
+  font-weight:    400;
+  color:          var(--color-dust);
+  padding:        0;
+  transition:     color 0.2s ease;
+}
+
+.navLink:hover {
+  color: var(--color-silver);
+}
+
+.social {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-md);
+  white-space: nowrap;
+}
+
+.socialLink {
+  font-family:     var(--font-sans);
+  font-size:       var(--text-small);
+  font-weight:     400;
+  color:           var(--color-dust);
+  text-decoration: none;
+  transition:      color 0.2s ease;
+}
+
+.socialLink:hover {
+  color: var(--accent-cerulean);
+}
+
+/* ─── Bottom bar: copyright · credit ─── */
+.bottom {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  padding-top:     var(--space-md);
+  border-top:      1px solid var(--color-ember-edge);
+}
+
+.copyright,
+.credit {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--color-ghost);
+  margin:         0;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .footer {
+    padding: var(--space-xl) var(--space-sm) var(--space-lg);
+  }
+
+  .top {
+    flex-direction: column;
+    align-items:    flex-start;
+    gap:            var(--space-md);
+  }
+
+  .nav {
+    justify-content: flex-start;
+    gap:             var(--space-sm);
+  }
+
+  .social {
+    gap: var(--space-sm);
+  }
+
+  .bottom {
+    flex-direction: column;
+    align-items:    flex-start;
+    gap:            var(--space-xs);
+  }
+}
