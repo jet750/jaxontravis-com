@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
   try {
     const stream = await client.messages.stream({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-6-20250514',
       max_tokens: 1024,
       system: buildSystemPrompt(companyName, companyContext, jobDescription),
       messages,

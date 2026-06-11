@@ -173,6 +173,7 @@ export default function AIInterview() {
     }).catch(() => {});
 
     setChatOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     await streamChat([OPENER]);
   }
 
