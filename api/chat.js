@@ -10,6 +10,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'messages must be a non-empty array' });
   }
 
+  const systemPrompt = buildSystemPrompt(companyName, companyContext, jobDescription);
+
+  // Guard: if system prompt is empty something is wrong with the import
+  if (!systemPrompt || systemPrompt.length < 100) {
+    return res.status(500).json({ error: 'system prompt failed to build' });
+  }
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   // SSE headers must be set before any write call.
@@ -22,9 +29,9 @@ export default async function handler(req, res) {
 
   try {
     const stream = await client.messages.stream({
-      model: 'claude-sonnet-4-6-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: buildSystemPrompt(companyName, companyContext, jobDescription),
+      system: systemPrompt,
       messages,
     });
 

@@ -51,7 +51,7 @@ export default function AIInterview() {
 
   // Auto-scroll on new message content
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }, [messages]);
 
   // Focus chat input when streaming ends
