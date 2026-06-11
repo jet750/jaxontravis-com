@@ -1,19 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './Nav.module.css';
 
 const NAV_LINKS = [
-  { id: 'ai-interview',    label: 'AI Interview',    accent: 'gold' },
-  { id: 'game-design',     label: 'Game Design',     accent: 'botanical' },
-  { id: 'artisan-studio',  label: 'Artisan Studio',  accent: 'ember' },
-  { id: 'about',           label: 'About',           accent: 'cerulean' },
+  { path: '/interview',     label: 'AI Interview',   accent: 'gold' },
+  { path: '/perennial',     label: 'Perennial',      accent: 'botanical' },
+  { path: '/bazaar-blends', label: 'Bazaar Blends',  accent: 'ember' },
+  { path: '/about',         label: 'About',          accent: 'cerulean' },
 ];
 
 const SCROLL_THRESHOLD = 80;
 
 export default function Nav() {
-  const [scrolled, setScrolled]     = useState(false);
-  const [menuOpen, setMenuOpen]     = useState(false);
-  const [activeId, setActiveId]     = useState('');
+  const [scrolled,  setScrolled]  = useState(false);
+  const [menuOpen,  setMenuOpen]  = useState(false);
+
+  const location = useLocation();
+  const navigate = useNavigate();
 
   /* ── Scroll-aware background ── */
   useEffect(() => {
@@ -22,25 +25,10 @@ export default function Nav() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  /* ── IntersectionObserver — active section ── */
+  /* ── Close mobile menu on route change ── */
   useEffect(() => {
-    const sectionIds = NAV_LINKS.map((l) => l.id);
-    const observers  = [];
-
-    sectionIds.forEach((id) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-
-      const obs = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActiveId(id); },
-        { rootMargin: '-40% 0px -50% 0px', threshold: 0 }
-      );
-      obs.observe(el);
-      observers.push(obs);
-    });
-
-    return () => observers.forEach((obs) => obs.disconnect());
-  }, []);
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   /* ── Lock body scroll when mobile menu is open ── */
   useEffect(() => {
@@ -48,15 +36,12 @@ export default function Nav() {
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
-  const handleLinkClick = useCallback((id) => {
-    setMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  const handleLogoClick = () => {
+    navigate('/');
+    window.scrollTo(0, 0);
+  };
 
-  const handleLogoClick = useCallback(() => {
-    setMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  const isActive = (path) => location.pathname === path;
 
   return (
     <header
@@ -68,7 +53,7 @@ export default function Nav() {
         <button
           className={styles.logo}
           onClick={handleLogoClick}
-          aria-label="Back to top"
+          aria-label="Go to home"
         >
           Jaxon Travis
         </button>
@@ -76,17 +61,17 @@ export default function Nav() {
         {/* Desktop links */}
         <nav aria-label="Site navigation">
           <ul className={styles.linkList}>
-            {NAV_LINKS.map(({ id, label, accent }) => (
-              <li key={id}>
-                <button
-                  className={`${styles.link} ${activeId === id ? styles.active : ''}`}
+            {NAV_LINKS.map(({ path, label, accent }) => (
+              <li key={path}>
+                <Link
+                  className={`${styles.link} ${isActive(path) ? styles.active : ''}`}
                   data-accent={accent}
-                  onClick={() => handleLinkClick(id)}
-                  aria-current={activeId === id ? 'true' : undefined}
+                  to={path}
+                  aria-current={isActive(path) ? 'page' : undefined}
                 >
                   <span className={styles.dot} aria-hidden="true" />
                   {label}
-                </button>
+                </Link>
               </li>
             ))}
           </ul>
@@ -114,17 +99,17 @@ export default function Nav() {
       >
         <nav aria-label="Mobile site navigation">
           <ul className={styles.overlayList}>
-            {NAV_LINKS.map(({ id, label, accent }) => (
-              <li key={id}>
-                <button
-                  className={`${styles.overlayLink} ${activeId === id ? styles.overlayActive : ''}`}
+            {NAV_LINKS.map(({ path, label, accent }) => (
+              <li key={path}>
+                <Link
+                  className={`${styles.overlayLink} ${isActive(path) ? styles.overlayActive : ''}`}
                   data-accent={accent}
-                  onClick={() => handleLinkClick(id)}
-                  aria-current={activeId === id ? 'true' : undefined}
+                  to={path}
+                  aria-current={isActive(path) ? 'page' : undefined}
                 >
                   <span className={styles.overlayDot} aria-hidden="true" />
                   {label}
-                </button>
+                </Link>
               </li>
             ))}
           </ul>

@@ -1,0 +1,251 @@
+/* ─── Section shell ─── */
+.section {
+  padding: var(--space-5xl) var(--space-xl);
+  border-top: 1px solid var(--color-ember-edge);
+}
+
+.container {
+  max-width: var(--max-width);
+  margin-inline: auto;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+.header {
+  margin-bottom: var(--space-3xl);
+}
+
+.eyebrow {
+  display:        inline-block;
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-botanical);
+  margin-bottom:  var(--space-sm);
+}
+
+.heading {
+  font-family:    var(--font-serif);
+  font-size:      var(--text-h2);
+  font-weight:    300;
+  letter-spacing: var(--tracking-tight);
+  color:          var(--color-parchment);
+  line-height:    var(--leading-heading);
+  margin-bottom:  var(--space-xs);
+}
+
+.subhead {
+  font-family: var(--font-sans);
+  font-size:   var(--text-body-xl);
+  font-weight: 300;
+  color:       var(--color-silver);
+  max-width:   540px;
+  line-height: var(--leading-body);
+  margin:      0;
+}
+
+/* ═══════════════════════════════════════════
+   CARD GRID
+═══════════════════════════════════════════ */
+.cardGrid {
+  display:               grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:                   var(--space-lg);
+  margin-bottom:         var(--space-3xl);
+  align-items:           start;
+}
+
+/* ─── Card frame ─── */
+.card {
+  display:        flex;
+  flex-direction: column;
+  border:         1px solid var(--color-ember-edge);
+  border-radius:  var(--radius-lg);
+  overflow:       hidden;
+  background:     var(--color-charcoal);
+  box-shadow:     var(--shadow-sm);
+  transition:     transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card:hover {
+  transform:    translateY(-6px);
+  box-shadow:   var(--shadow-lg);
+  border-color: var(--accent-botanical);
+}
+
+/* ═══════════════════════════════════════════
+   IMAGE ZONE — 5:7 portrait (standard TCG card ratio)
+═══════════════════════════════════════════ */
+.imageZone {
+  position:    relative;
+  aspect-ratio: 5 / 7;
+  overflow:    hidden;
+  /* Default placeholder gradient */
+  background:  radial-gradient(ellipse at 50% 35%, #192e17 0%, #0d1a0c 100%);
+}
+
+/* Per-card placeholder gradient */
+.birds-of-paradise  { background: radial-gradient(ellipse at 45% 25%, #1d3323 0%, #0a1a10 100%); }
+.saguaro-cactus     { background: radial-gradient(ellipse at 50% 65%, #1e2e14 0%, #111807 100%); }
+.blue-morpho-butterfly { background: radial-gradient(ellipse at 55% 35%, #152535 0%, #0a1220 100%); }
+
+/* Photo fills zone when loaded; hidden on error */
+.cardImg {
+  position:   absolute;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+}
+
+/* Radial vignette keeps badges legible over any image */
+.vignette {
+  position:       absolute;
+  inset:          0;
+  background:     radial-gradient(ellipse at center, transparent 35%, rgba(8, 12, 8, 0.65) 100%);
+  pointer-events: none;
+  z-index:        1;
+}
+
+/* ─── Art-zone meta badges ─── */
+.artMeta {
+  position:        absolute;
+  inset:           0;
+  display:         flex;
+  align-items:     flex-end;
+  justify-content: space-between;
+  padding:         var(--space-xs) var(--space-sm);
+  z-index:         2;
+  pointer-events:  none;
+}
+
+.tierBadge {
+  font-family:     var(--font-mono);
+  font-size:       var(--text-eyebrow);
+  font-weight:     500;
+  letter-spacing:  0.1em;
+  color:           var(--color-parchment);
+  background:      rgba(8, 12, 8, 0.78);
+  border:          1px solid rgba(138, 184, 126, 0.35);
+  border-radius:   var(--radius-sm);
+  padding:         2px 6px;
+  backdrop-filter: blur(4px);
+}
+
+.archetypeTag {
+  font-family:     var(--font-sans);
+  font-size:       var(--text-eyebrow);
+  font-weight:     600;
+  letter-spacing:  var(--tracking-wide);
+  text-transform:  uppercase;
+  color:           var(--accent-botanical);
+  background:      rgba(8, 12, 8, 0.78);
+  border-radius:   var(--radius-sm);
+  padding:         2px 6px;
+  backdrop-filter: blur(4px);
+}
+
+/* ─── Card body ─── */
+.cardBody {
+  padding:        var(--space-md);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-xs);
+}
+
+.cardName {
+  font-family:    var(--font-serif);
+  font-size:      var(--text-h4);
+  font-weight:    400;
+  letter-spacing: var(--tracking-tight);
+  color:          var(--color-parchment);
+  line-height:    var(--leading-heading);
+}
+
+.cardEffect {
+  font-family: var(--font-mono);
+  font-size:   var(--text-micro);
+  color:       var(--color-silver);
+  line-height: var(--leading-body);
+  margin:      0;
+}
+
+.effectLabel {
+  color: var(--accent-botanical);
+}
+
+.bodyDivider {
+  width:       100%;
+  height:      1px;
+  background:  var(--color-ember-edge);
+  flex-shrink: 0;
+}
+
+.cardDescriptor {
+  font-family:        var(--font-sans);
+  font-size:          var(--text-small);
+  color:              var(--color-dust);
+  line-height:        var(--leading-body);
+  margin:             0;
+  display:            -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow:           hidden;
+}
+
+/* ═══════════════════════════════════════════
+   CTA
+═══════════════════════════════════════════ */
+.ctas {
+  display: flex;
+}
+
+.ctaPrimary {
+  padding:       var(--space-xs) var(--space-lg);
+  background:    var(--accent-botanical);
+  border-radius: var(--radius-md);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-body);
+  font-weight:   600;
+  color:         var(--color-obsidian);
+  transition:    background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow:    var(--shadow-sm);
+}
+
+.ctaPrimary:hover {
+  background: var(--pastel-botanical);
+  transform:  translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.ctaPrimary:active {
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .section {
+    padding: var(--space-3xl) var(--space-sm);
+  }
+
+  .header {
+    margin-bottom: var(--space-xl);
+  }
+
+  .cardGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .cardGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+  }
+}

@@ -1,10 +1,11 @@
+import { Link, useNavigate } from 'react-router-dom';
 import styles from './Footer.module.css';
 
 const NAV_LINKS = [
-  { label: 'AI Interview',   id: 'ai-interview' },
-  { label: 'Game Design',    id: 'game-design' },
-  { label: 'Artisan Studio', id: 'artisan-studio' },
-  { label: 'About',          id: 'about' },
+  { label: 'AI Interview',   path: '/interview' },
+  { label: 'Perennial',      path: '/perennial' },
+  { label: 'Bazaar Blends',  path: '/bazaar-blends' },
+  { label: 'About',          path: '/about' },
 ];
 
 const SOCIAL = [
@@ -12,12 +13,14 @@ const SOCIAL = [
   { label: 'LinkedIn', href: 'https://linkedin.com/in/jaxontravis' },
 ];
 
-function scrollTo(id) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-}
-
 export default function Footer() {
-  const year = new Date().getFullYear();
+  const year     = new Date().getFullYear();
+  const navigate = useNavigate();
+
+  const handleBrandClick = () => {
+    navigate('/');
+    window.scrollTo(0, 0);
+  };
 
   return (
     <footer className={styles.footer}>
@@ -26,21 +29,21 @@ export default function Footer() {
         <div className={styles.top}>
           <button
             className={styles.brand}
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            aria-label="Back to top"
+            onClick={handleBrandClick}
+            aria-label="Go to home"
           >
             Jaxon Travis
           </button>
 
           <nav className={styles.nav} aria-label="Footer navigation">
             {NAV_LINKS.map(link => (
-              <button
-                key={link.id}
+              <Link
+                key={link.path}
                 className={styles.navLink}
-                onClick={() => scrollTo(link.id)}
+                to={link.path}
               >
                 {link.label}
-              </button>
+              </Link>
             ))}
           </nav>
 

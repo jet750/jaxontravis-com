@@ -1,29 +1,30 @@
+import { useNavigate } from 'react-router-dom';
 import styles from './Hero.module.css';
 
 const CARDS = [
   {
-    id:         'ai-interview',
+    path:       '/interview',
     eyebrow:    'PROFESSIONAL',
     heading:    'Interview Me',
     descriptor: 'Talk to an AI trained on my full background. Takes 5 minutes. Saves you a screening call.',
     accent:     'gold',
   },
   {
-    id:         'game-design',
+    path:       '/perennial',
     eyebrow:    'GAME DESIGN',
     heading:    'Perennial',
     descriptor: 'A botanical engine-building card game for 2–4 players. Standalone box.',
     accent:     'botanical',
   },
   {
-    id:         'artisan-studio',
+    path:       '/bazaar-blends',
     eyebrow:    'ARTISAN STUDIO',
     heading:    'Bazaar Blends',
     descriptor: 'Where every spice has an origin story.',
     accent:     'ember',
   },
   {
-    id:         'about',
+    path:       '/about',
     eyebrow:    'ABOUT',
     heading:    'The Through-Line',
     descriptor: 'Process architect. Systems thinker. Carlsbad, CA.',
@@ -31,11 +32,9 @@ const CARDS = [
   },
 ];
 
-function scrollTo(id) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-}
-
 export default function Hero() {
+  const navigate = useNavigate();
+
   return (
     <section id="hero" className={styles.hero}>
       {/* ── Main content ── */}
@@ -69,12 +68,12 @@ export default function Hero() {
 
       {/* ── Entry cards ── */}
       <ul className={styles.cards}>
-        {CARDS.map(({ id, eyebrow, heading, descriptor, accent }) => (
-          <li key={id} className={styles.cardItem}>
+        {CARDS.map(({ path, eyebrow, heading, descriptor, accent }) => (
+          <li key={path} className={styles.cardItem}>
             <button
               className={styles.card}
               data-accent={accent}
-              onClick={() => scrollTo(id)}
+              onClick={() => navigate(path)}
             >
               <span className={styles.cardEyebrow}>{eyebrow}</span>
               <span className={styles.cardHeading}>{heading}</span>
