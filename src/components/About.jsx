@@ -1,3 +1,4 @@
+import headshotSrc from '../assets/about/headshot.jpg';
 import styles from './About.module.css';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 
@@ -107,8 +108,18 @@ export default function About() {
 
           {/* Left: photo + location */}
           <div className={styles.photoWrap}>
-            <div className={styles.photoPlaceholder} role="img" aria-label="Jaxon Travis">
-              <span className={styles.initials} aria-hidden="true">JT</span>
+            <div className={styles.photoPlaceholder}>
+              <img
+                src={headshotSrc}
+                alt="Jaxon Travis"
+                className={styles.headshot}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                }}
+              />
+              {/* Fallback initials — hidden when photo loads */}
+              <span className={styles.initials} style={{ display: 'none' }} aria-hidden="true">JT</span>
             </div>
 
             <div className={styles.locationBlock}>
