@@ -4,7 +4,7 @@ import { buildSystemPrompt } from '../src/data/background.js';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { messages, companyName, companyContext, jobDescription } = req.body;
+  const { messages, companyName, companyContext, jobDescription } = req.body ?? {};
 
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages must be a non-empty array' });
@@ -17,7 +17,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'system prompt failed to build' });
   }
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // 25s timeout keeps us inside the function's 30s maxDuration so the
+  // client gets a clean SSE error event instead of a dropped connection
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 25_000 });
 
   // SSE headers must be set before any write call.
   // X-Accel-Buffering disables nginx/proxy buffering so chunks reach the client immediately.

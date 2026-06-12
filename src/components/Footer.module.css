@@ -55,6 +55,9 @@
   font-weight:    400;
   color:          var(--color-dust);
   padding:        0;
+  display:        inline-flex;
+  align-items:    center;
+  min-height:     44px;
   transition:     color 0.2s ease;
 }
 
@@ -75,6 +78,9 @@
   font-weight:     400;
   color:           var(--color-dust);
   text-decoration: none;
+  display:         inline-flex;
+  align-items:     center;
+  min-height:      44px;
   transition:      color 0.2s ease;
 }
 

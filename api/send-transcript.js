@@ -54,7 +54,9 @@ export default async function handler(req, res) {
   // Step 2: Haiku summary (best-effort — failure falls back gracefully)
   let summary = null;
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    // Bounded so a slow summary can't eat the whole function budget —
+    // on timeout we fall through to the catch and send without a summary
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 15_000 });
 
     const transcriptText = messages
       .map(m => `${m.role === 'user' ? 'Recruiter' : "Jaxon's AI"}: ${extractText(m.content)}`)

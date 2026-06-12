@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { path: '/perennial',     label: 'Perennial',      accent: 'botanical' },
   { path: '/bazaar-blends', label: 'Bazaar Blends',  accent: 'ember' },
   { path: '/about',         label: 'About',          accent: 'cerulean' },
+  { path: '/work-samples',  label: 'Work Samples',   accent: 'gold' },
 ];
 
 const SCROLL_THRESHOLD = 80;

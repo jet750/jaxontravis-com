@@ -28,6 +28,9 @@
 
 /* ─── Logo ─── */
 .logo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--font-serif);
   font-size: var(--text-h4);
   font-weight: 300;
@@ -95,14 +98,15 @@
 .link.active .dot    { opacity: 1; }
 
 /* ─── Hamburger — hidden on desktop ─── */
+/* 44×44 touch target; the visible bars stay 24px wide via padding */
 .hamburger {
   display: none;
   flex-direction: column;
   justify-content: center;
   gap: 5px;
-  width: 28px;
-  height: 28px;
-  padding: 2px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
   flex-shrink: 0;
 }
 
@@ -134,14 +138,19 @@
   gap: var(--space-lg);
   opacity: 0;
   pointer-events: none;
+  /* visibility removes the hidden links from the tab order; the delay
+     keeps the fade-out animation visible before the overlay vanishes */
+  visibility: hidden;
   transform: translateY(-8px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
 }
 
 .overlayOpen {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
   transform: translateY(0);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s;
 }
 
 .overlayList {
@@ -154,6 +163,7 @@
 .overlayLink {
   display: inline-flex;
   align-items: center;
+  min-height: 44px;
   gap: var(--space-xs);
   font-family: var(--font-serif);
   font-size: var(--text-h3);

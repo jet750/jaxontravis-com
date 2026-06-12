@@ -174,12 +174,15 @@
 
 .ctaPrimary {
   padding:       var(--space-xs) var(--space-lg);
+  min-height:    44px;
   background:    var(--accent-ember);
   border-radius: var(--radius-md);
   font-family:   var(--font-sans);
   font-size:     var(--text-body);
   font-weight:   600;
-  color:         var(--color-parchment);
+  /* obsidian (not parchment) on ember: 5.0:1 vs 3.2:1 — matches the
+     dark-text convention of the gold/botanical filled buttons */
+  color:         var(--color-obsidian);
   transition:    background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
   box-shadow:    var(--shadow-sm);
 }

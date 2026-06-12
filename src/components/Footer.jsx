@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { label: 'Perennial',      path: '/perennial' },
   { label: 'Bazaar Blends',  path: '/bazaar-blends' },
   { label: 'About',          path: '/about' },
+  { label: 'Work Samples',   path: '/work-samples' },
 ];
 
 const SOCIAL = [

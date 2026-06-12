@@ -263,6 +263,12 @@
     gap: var(--space-sm);
   }
 
+  /* --text-display bottoms out at 3.5rem, which can overflow a 320px
+     viewport — scale with viewport width instead on small phones */
+  .name {
+    font-size: clamp(2.5rem, 15vw, 3.5rem);
+  }
+
   .tagline {
     font-size: var(--text-body);
   }

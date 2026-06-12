@@ -121,6 +121,7 @@
   border:      1px solid var(--color-ember-edge);
   border-radius: var(--radius-md);
   padding:     var(--space-xs) var(--space-sm);
+  min-height:  44px;
   font-family: var(--font-sans);
   font-size:   var(--text-body);
   color:       var(--color-parchment);
@@ -182,6 +183,7 @@
 /* ─── Fetch button ─── */
 .fetchBtn {
   padding:       var(--space-xs) var(--space-sm);
+  min-height:    44px;
   background:    var(--color-charcoal);
   border:        1px solid var(--color-ember-edge);
   border-radius: var(--radius-md);
@@ -211,6 +213,9 @@
 
 /* ─── Toggle paste link ─── */
 .toggleLink {
+  display:     inline-flex;
+  align-items: center;
+  min-height:  44px;
   font-family: var(--font-sans);
   font-size:   var(--text-small);
   color:       var(--color-dust);
@@ -394,7 +399,8 @@
   display:    flex;
   flex-direction: column;
   gap:        var(--space-md);
-  max-height: 56vh;
+  /* dvh tracks the visible viewport when the mobile keyboard is open */
+  max-height: 56dvh;
   min-height: 320px;
   scroll-behavior: smooth;
 }
@@ -417,6 +423,8 @@
 
 .chatInput {
   flex:          1;
+  min-width:     0; /* allow shrinking inside flex row on narrow screens */
+  min-height:    44px;
   background:    var(--color-ash);
   border:        1px solid var(--color-ember-edge);
   border-radius: var(--radius-md);
@@ -441,6 +449,7 @@
 
 .sendBtn {
   padding:       var(--space-xs) var(--space-md);
+  min-height:    44px;
   background:    var(--accent-gold);
   border-radius: var(--radius-md);
   font-family:   var(--font-sans);
@@ -543,6 +552,21 @@
     align-items:    flex-start;
     padding:        var(--space-md);
   }
+
+  /* Transcript bar reads left-to-right on narrow screens */
+  .transcriptBar {
+    align-items: stretch;
+  }
+
+  .emailBtn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .emailCaption {
+    text-align: left;
+    max-width:  none;
+  }
 }
 
 /* Very small screens — stack URL input + fetch button */
@@ -570,6 +594,7 @@
 
 .emailBtn {
   padding:       var(--space-2xs) var(--space-sm);
+  min-height:    44px;
   background:    transparent;
   border:        1px solid var(--color-ember-edge);
   border-radius: var(--radius-md);
@@ -595,6 +620,11 @@
 .emailBtnSent {
   border-color: var(--accent-botanical);
   color:        var(--accent-botanical);
+}
+
+.emailBtnError {
+  border-color: var(--accent-ember);
+  color:        var(--accent-ember);
 }
 
 .emailCaption {

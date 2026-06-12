@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { url } = req.body;
+  const { url } = req.body ?? {};
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'url required' });
   }
@@ -39,7 +39,9 @@ export default async function handler(req, res) {
     // Trim to 60 000 chars — plenty for any JD, avoids huge context windows
     const trimmed = html.slice(0, 60_000);
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    // Extraction timeout stays inside the function's 30s maxDuration;
+    // a timeout throws and falls through to the catch → { error: 'blocked' }
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 20_000 });
 
     const extraction = await client.messages.create({
       model:      'claude-haiku-4-5-20251001',

@@ -107,7 +107,7 @@ export default function About() {
 
           {/* Left: photo + location */}
           <div className={styles.photoWrap}>
-            <div className={styles.photoPlaceholder} aria-label="Jaxon Travis">
+            <div className={styles.photoPlaceholder} role="img" aria-label="Jaxon Travis">
               <span className={styles.initials} aria-hidden="true">JT</span>
             </div>
 

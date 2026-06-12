@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './AIInterview.module.css';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+import { trackEvent } from '../lib/analytics';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const OPENER   = { role: 'user', content: 'Please begin.' };
@@ -42,7 +43,7 @@ export default function AIInterview() {
   const [isStreaming,    setIsStreaming]     = useState(false);
   const [showPostCta,    setShowPostCta]    = useState(false);
   const [transcriptSent, setTranscriptSent] = useState(false);
-  const [emailStatus,    setEmailStatus]    = useState('idle'); // 'idle'|'sending'|'sent'
+  const [emailStatus,    setEmailStatus]    = useState('idle'); // 'idle'|'sending'|'sent'|'error'
 
   const messagesEndRef    = useRef(null);
   const chatInputRef      = useRef(null);
@@ -86,6 +87,8 @@ export default function AIInterview() {
     // Auto-trigger: skip silently if a transcript already went out
     if (isAutomatic && transcriptSentRef.current) return;
 
+    trackEvent('transcript_email', { trigger: isAutomatic ? 'auto' : 'manual' });
+
     setEmailStatus('sending');
     try {
       const res = await fetch('/api/send-transcript', {
@@ -100,7 +103,14 @@ export default function AIInterview() {
       setTimeout(() => setEmailStatus('idle'), 2500);
     } catch (err) {
       console.error('[send-transcript]', err?.message ?? err);
-      setEmailStatus('idle');
+      // Manual sends surface a visible retry state; auto-sends fail silently
+      // (the idle timer will try again on the next message)
+      if (isAutomatic) {
+        setEmailStatus('idle');
+      } else {
+        setEmailStatus('error');
+        setTimeout(() => setEmailStatus('idle'), 4000);
+      }
     }
   };
 
@@ -220,13 +230,16 @@ export default function AIInterview() {
       if (data.error || !data.text) {
         setFetchStatus('error');
         setShowPaste(true);
+        trackEvent('jd_fetch_submitted', { outcome: 'error' });
       } else {
         setJobText(data.text);
         setFetchStatus('done');
+        trackEvent('jd_fetch_submitted', { outcome: 'success' });
       }
     } catch {
       setFetchStatus('error');
       setShowPaste(true);
+      trackEvent('jd_fetch_submitted', { outcome: 'error' });
     }
   }
 
@@ -235,6 +248,8 @@ export default function AIInterview() {
     e.preventDefault();
     setSubmitAttempted(true);
     if (!name.trim() || !company.trim() || !EMAIL_RE.test(email)) return;
+
+    trackEvent('interview_gate_completed', { hasJobDescription: Boolean(jobText.trim()) });
 
     // Fire-and-forget lead capture — non-blocking
     fetch('/api/log-lead', {
@@ -264,6 +279,11 @@ export default function AIInterview() {
     const userMsg    = { role: 'user', content: text };
     const nextDisplay = [...messages, userMsg];
     setMessages(nextDisplay);
+
+    // Count only — message content is intentionally never sent to analytics
+    trackEvent('chat_message_sent', {
+      turn: nextDisplay.filter(m => m.role === 'user').length,
+    });
 
     // Full API history: hidden opener + every completed message + new user turn
     const apiMessages = [
@@ -342,6 +362,7 @@ export default function AIInterview() {
                 type="submit"
                 className={styles.sendBtn}
                 disabled={isStreaming || !chatInput.trim()}
+                aria-label="Send message"
               >
                 {isStreaming ? '…' : 'Send →'}
               </button>
@@ -352,12 +373,16 @@ export default function AIInterview() {
             <div className={styles.transcriptBar}>
               <button
                 type="button"
-                className={`${styles.emailBtn}${emailStatus === 'sent' ? ` ${styles.emailBtnSent}` : ''}`}
+                className={`${styles.emailBtn}${
+                  emailStatus === 'sent'  ? ` ${styles.emailBtnSent}`  :
+                  emailStatus === 'error' ? ` ${styles.emailBtnError}` : ''
+                }`}
                 onClick={() => doSendRef.current?.()}
                 disabled={emailStatus === 'sending'}
               >
                 {emailStatus === 'sending' ? 'Sending…'
                  : emailStatus === 'sent'  ? 'Sent ✓'
+                 : emailStatus === 'error' ? 'Failed — try again'
                  : transcriptSent          ? 'Send updated copy'
                  :                           'Email this conversation'}
               </button>
@@ -490,6 +515,7 @@ export default function AIInterview() {
                         }`}
                         onClick={handleFetchJD}
                         disabled={!jobUrl.trim() || fetchStatus === 'fetching'}
+                        aria-label="Fetch job description from URL"
                       >
                         {fetchStatus === 'fetching' ? '…' :
                          fetchStatus === 'done'     ? '✓' : 'Fetch'}

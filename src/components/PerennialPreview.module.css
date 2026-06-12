@@ -205,6 +205,7 @@
 
 .ctaPrimary {
   padding:       var(--space-xs) var(--space-lg);
+  min-height:    44px;
   background:    var(--accent-botanical);
   border-radius: var(--radius-md);
   font-family:   var(--font-sans);

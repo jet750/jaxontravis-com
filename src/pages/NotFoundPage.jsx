@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 import styles from './NotFoundPage.module.css';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 export default function NotFoundPage() {
+  usePageMeta('Page Not Found — Jaxon Travis', "This page doesn't exist.");
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
