@@ -1,3 +1,4 @@
+// cache-bust: force rebuild for updated headshot
 import { useNavigate } from 'react-router-dom';
 import headshotSrc from '../assets/about/headshot.jpg';
 import styles from './AboutPreview.module.css';
