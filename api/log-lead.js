@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       : 'Unknown';
 
     await resend.emails.send({
-      from: 'AI Interview <notifications@jaxontravis.com>',
+      from: 'AI Interview <notifications@mail.jaxontravis.com>',
       to: 'jaxontravis7@gmail.com',
       subject: `New AI Interview Session — ${company || 'Unknown Company'}`,
       html: `

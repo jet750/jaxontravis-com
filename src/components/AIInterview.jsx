@@ -36,18 +36,30 @@ export default function AIInterview() {
   const [showPaste,   setShowPaste]   = useState(false);
 
   // ── Chat ───────────────────────────────────────────
-  const [chatOpen,     setChatOpen]     = useState(false);
-  const [messages,     setMessages]     = useState([]);
-  const [chatInput,    setChatInput]    = useState('');
-  const [isStreaming,  setIsStreaming]  = useState(false);
-  const [showPostCta,  setShowPostCta]  = useState(false);
+  const [chatOpen,       setChatOpen]       = useState(false);
+  const [messages,       setMessages]       = useState([]);
+  const [chatInput,      setChatInput]      = useState('');
+  const [isStreaming,    setIsStreaming]     = useState(false);
+  const [showPostCta,    setShowPostCta]    = useState(false);
+  const [transcriptSent, setTranscriptSent] = useState(false);
+  const [emailStatus,    setEmailStatus]    = useState('idle'); // 'idle'|'sending'|'sent'
 
-  const messagesEndRef = useRef(null);
-  const chatInputRef   = useRef(null);
+  const messagesEndRef    = useRef(null);
+  const chatInputRef      = useRef(null);
+  const idleTimerRef      = useRef(null);
+  const transcriptSentRef = useRef(false); // mirrors transcriptSent for non-reactive contexts
+  const latestPayloadRef  = useRef(null);  // always holds the most recent sendable payload
+  const doSendRef         = useRef(null);  // stable wrapper updated each render
 
   // Scroll-reveal — shared ref works across gate↔chat view transitions
   // because revealed stays true once set (re-render keeps the truthy state)
   const [containerRef, revealed] = useScrollReveal();
+
+  // OPENER is never pushed into the messages display array, so any role:'user'
+  // entry here is a real recruiter question — safe to use as the gating condition.
+  const hasRealUserMsg = messages.some(m => m.role === 'user');
+
+  // ── Existing effects ────────────────────────────────
 
   // Auto-scroll on new message content
   useEffect(() => {
@@ -64,6 +76,71 @@ export default function AIInterview() {
     const aiCount = messages.filter(m => m.role === 'assistant' && m.content).length;
     if (aiCount >= 3) setShowPostCta(true);
   }, [messages]);
+
+  // ── Transcript send function ───────────────────────
+  // Assigned to a ref each render so timers and event handlers always get
+  // the latest closed-over state without needing to be in any dep array.
+  doSendRef.current = async function sendTranscript(isAutomatic = false) {
+    const payload = latestPayloadRef.current;
+    if (!payload) return;
+    // Auto-trigger: skip silently if a transcript already went out
+    if (isAutomatic && transcriptSentRef.current) return;
+
+    setEmailStatus('sending');
+    try {
+      const res = await fetch('/api/send-transcript', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      transcriptSentRef.current = true;
+      setTranscriptSent(true);
+      setEmailStatus('sent');
+      setTimeout(() => setEmailStatus('idle'), 2500);
+    } catch (err) {
+      console.error('[send-transcript]', err?.message ?? err);
+      setEmailStatus('idle');
+    }
+  };
+
+  // Keep payload ref current so the idle timer and beacon always have the latest messages
+  useEffect(() => {
+    if (!chatOpen || !hasRealUserMsg) return;
+    latestPayloadRef.current = {
+      messages,
+      recipientEmail: email,
+      companyName:    company  || undefined,
+      jobDescription: jobText  || undefined,
+    };
+  }, [chatOpen, hasRealUserMsg, messages, email, company, jobText]);
+
+  // 10-minute idle timer — resets on every new message, cancels once transcript is sent
+  useEffect(() => {
+    if (!chatOpen || !hasRealUserMsg || transcriptSent) return;
+    clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => doSendRef.current?.(true), 10 * 60 * 1000);
+    return () => clearTimeout(idleTimerRef.current);
+  }, [messages, chatOpen, transcriptSent, hasRealUserMsg]);
+
+  // Beacon on page exit — reads refs only so no reactive deps needed
+  useEffect(() => {
+    function handleUnload() {
+      if (transcriptSentRef.current) return;
+      const payload = latestPayloadRef.current;
+      if (!payload) return;
+      navigator.sendBeacon(
+        '/api/send-transcript',
+        new Blob([JSON.stringify(payload)], { type: 'application/json' }),
+      );
+    }
+    window.addEventListener('pagehide',     handleUnload);
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('pagehide',     handleUnload);
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, []);
 
   // ── Core SSE streaming ─────────────────────────────
   const streamChat = useCallback(async (apiMessages) => {
@@ -270,6 +347,26 @@ export default function AIInterview() {
               </button>
             </form>
           </div>
+
+          {hasRealUserMsg && (
+            <div className={styles.transcriptBar}>
+              <button
+                type="button"
+                className={`${styles.emailBtn}${emailStatus === 'sent' ? ` ${styles.emailBtnSent}` : ''}`}
+                onClick={() => doSendRef.current?.()}
+                disabled={emailStatus === 'sending'}
+              >
+                {emailStatus === 'sending' ? 'Sending…'
+                 : emailStatus === 'sent'  ? 'Sent ✓'
+                 : transcriptSent          ? 'Send updated copy'
+                 :                           'Email this conversation'}
+              </button>
+              <p className={styles.emailCaption}>
+                This conversation auto-sends a summary after 10 minutes of inactivity or when
+                you leave. If you've already received one, exporting again sends an updated copy.
+              </p>
+            </div>
+          )}
 
           {showPostCta && (
             <div className={styles.postCta}>

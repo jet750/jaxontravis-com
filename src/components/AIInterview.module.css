@@ -556,3 +556,53 @@
     text-align: center;
   }
 }
+
+/* ════════════════════════════════════════════
+   TRANSCRIPT EXPORT BAR
+════════════════════════════════════════════ */
+.transcriptBar {
+  margin-top: var(--space-sm);
+  display:    flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap:        var(--space-2xs);
+}
+
+.emailBtn {
+  padding:       var(--space-2xs) var(--space-sm);
+  background:    transparent;
+  border:        1px solid var(--color-ember-edge);
+  border-radius: var(--radius-md);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-small);
+  font-weight:   500;
+  color:         var(--color-dust);
+  white-space:   nowrap;
+  transition:    border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.emailBtn:hover:not(:disabled) {
+  border-color: var(--accent-gold);
+  color:        var(--accent-gold);
+  background:   var(--tint-gold-08);
+}
+
+.emailBtn:disabled {
+  opacity: 0.5;
+  cursor:  not-allowed;
+}
+
+.emailBtnSent {
+  border-color: var(--accent-botanical);
+  color:        var(--accent-botanical);
+}
+
+.emailCaption {
+  font-family: var(--font-sans);
+  font-size:   var(--text-micro);
+  color:       var(--color-ghost);
+  text-align:  right;
+  max-width:   380px;
+  line-height: var(--leading-body);
+  margin:      0;
+}
