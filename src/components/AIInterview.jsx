@@ -41,7 +41,6 @@ export default function AIInterview() {
   const [messages,       setMessages]       = useState([]);
   const [chatInput,      setChatInput]      = useState('');
   const [isStreaming,    setIsStreaming]     = useState(false);
-  const [showPostCta,    setShowPostCta]    = useState(false);
   const [transcriptSent, setTranscriptSent] = useState(false);
   const [emailStatus,    setEmailStatus]    = useState('idle'); // 'idle'|'sending'|'sent'|'error'
 
@@ -50,7 +49,6 @@ export default function AIInterview() {
   const idleTimerRef      = useRef(null);
   const transcriptSentRef = useRef(false); // mirrors transcriptSent for non-reactive contexts
   const latestPayloadRef  = useRef(null);  // always holds the most recent sendable payload
-  const doSendRef         = useRef(null);  // stable wrapper updated each render
 
   // Scroll-reveal — shared ref works across gate↔chat view transitions
   // because revealed stays true once set (re-render keeps the truthy state)
@@ -72,16 +70,13 @@ export default function AIInterview() {
     if (chatOpen && !isStreaming) chatInputRef.current?.focus();
   }, [chatOpen, isStreaming]);
 
-  // Show post-CTA after 3 AI responses
-  useEffect(() => {
-    const aiCount = messages.filter(m => m.role === 'assistant' && m.content).length;
-    if (aiCount >= 3) setShowPostCta(true);
-  }, [messages]);
+  // showPostCta is derived: no effect or state needed.
+  const showPostCta = messages.filter(m => m.role === 'assistant' && m.content).length >= 3;
 
   // ── Transcript send function ───────────────────────
-  // Assigned to a ref each render so timers and event handlers always get
-  // the latest closed-over state without needing to be in any dep array.
-  doSendRef.current = async function sendTranscript(isAutomatic = false) {
+  // useCallback with [] is correct: all reads go through refs (latestPayloadRef,
+  // transcriptSentRef) and all state setters are stable across renders.
+  const doSend = useCallback(async function sendTranscript(isAutomatic = false) {
     const payload = latestPayloadRef.current;
     if (!payload) return;
     // Auto-trigger: skip silently if a transcript already went out
@@ -112,7 +107,7 @@ export default function AIInterview() {
         setTimeout(() => setEmailStatus('idle'), 4000);
       }
     }
-  };
+  }, []);
 
   // Keep payload ref current so the idle timer and beacon always have the latest messages
   useEffect(() => {
@@ -129,9 +124,9 @@ export default function AIInterview() {
   useEffect(() => {
     if (!chatOpen || !hasRealUserMsg || transcriptSent) return;
     clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => doSendRef.current?.(true), 10 * 60 * 1000);
+    idleTimerRef.current = setTimeout(() => doSend(true), 10 * 60 * 1000);
     return () => clearTimeout(idleTimerRef.current);
-  }, [messages, chatOpen, transcriptSent, hasRealUserMsg]);
+  }, [messages, chatOpen, transcriptSent, hasRealUserMsg, doSend]);
 
   // Beacon on page exit — reads refs only so no reactive deps needed
   useEffect(() => {
@@ -377,7 +372,7 @@ export default function AIInterview() {
                   emailStatus === 'sent'  ? ` ${styles.emailBtnSent}`  :
                   emailStatus === 'error' ? ` ${styles.emailBtnError}` : ''
                 }`}
-                onClick={() => doSendRef.current?.()}
+                onClick={doSend}
                 disabled={emailStatus === 'sending'}
               >
                 {emailStatus === 'sending' ? 'Sending…'

@@ -9,12 +9,12 @@
   --color-parchment:   #F5EFE6;
   --color-silver:      #D1CCC6;
   --color-dust:        #9B9389;
-  --color-ghost:       #4D4843;
+  --color-ghost:       #9C908D;   /* lifted from #4D4843 — AA 4.5:1 on --color-ash */
 
   /* ─── Section Accents ─── */
   --accent-gold:       #D4A83F;
   --accent-botanical:  #8AB87E;
-  --accent-ember:      #C96B42;
+  --accent-ember:      #CE6E44;   /* lifted from #C96B42 — AA 4.5:1 for eyebrow text on --color-charcoal */
   --accent-cerulean:   #6B92BC;
 
   /* ─── Pastel Accent Blends ─── */

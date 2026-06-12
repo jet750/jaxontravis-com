@@ -13,11 +13,17 @@ const NAV_LINKS = [
 const SCROLL_THRESHOLD = 80;
 
 export default function Nav() {
-  const [scrolled,  setScrolled]  = useState(false);
-  const [menuOpen,  setMenuOpen]  = useState(false);
+  const [scrolled,  setScrolled] = useState(false);
+  // Store the location.key at which the menu was opened. location.key is unique
+  // per navigation entry (including back/forward), so menuOpen naturally becomes
+  // false on any navigation without needing a separate route-change effect.
+  const [openAtKey, setOpenAtKey] = useState(null);
 
+  // useLocation must be called before the derived menuOpen value below.
   const location = useLocation();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+
+  const menuOpen = openAtKey === location.key;
 
   /* ── Scroll-aware background ── */
   useEffect(() => {
@@ -25,11 +31,6 @@ export default function Nav() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  /* ── Close mobile menu on route change ── */
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [location.pathname]);
 
   /* ── Lock body scroll when mobile menu is open ── */
   useEffect(() => {
@@ -82,7 +83,7 @@ export default function Nav() {
           {/* Hamburger — mobile only */}
           <button
             className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
-            onClick={() => setMenuOpen((prev) => !prev)}
+            onClick={() => setOpenAtKey(prev => prev === location.key ? null : location.key)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
@@ -103,6 +104,17 @@ export default function Nav() {
       >
         <nav aria-label="Mobile site navigation">
           <ul className={styles.overlayList}>
+            <li>
+              <Link
+                className={`${styles.overlayLink} ${isActive('/') ? styles.overlayActive : ''}`}
+                data-accent="home"
+                to="/"
+                aria-current={isActive('/') ? 'page' : undefined}
+              >
+                <span className={styles.overlayDot} aria-hidden="true" />
+                Home
+              </Link>
+            </li>
             {NAV_LINKS.map(({ path, label, accent }) => (
               <li key={path}>
                 <Link

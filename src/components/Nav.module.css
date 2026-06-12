@@ -177,10 +177,11 @@
   color: var(--color-parchment);
 }
 
-.overlayLink.overlayActive[data-accent="gold"]      { color: var(--accent-gold);      }
-.overlayLink.overlayActive[data-accent="botanical"] { color: var(--accent-botanical);  }
-.overlayLink.overlayActive[data-accent="ember"]     { color: var(--accent-ember);      }
-.overlayLink.overlayActive[data-accent="cerulean"]  { color: var(--accent-cerulean);   }
+.overlayLink.overlayActive[data-accent="home"]      { color: var(--color-parchment);   }
+.overlayLink.overlayActive[data-accent="gold"]      { color: var(--accent-gold);        }
+.overlayLink.overlayActive[data-accent="botanical"] { color: var(--accent-botanical);   }
+.overlayLink.overlayActive[data-accent="ember"]     { color: var(--accent-ember);       }
+.overlayLink.overlayActive[data-accent="cerulean"]  { color: var(--accent-cerulean);    }
 
 .overlayDot {
   width: 10px;
@@ -189,6 +190,7 @@
   flex-shrink: 0;
 }
 
+.overlayLink[data-accent="home"]      .overlayDot { background: var(--color-silver);    }
 .overlayLink[data-accent="gold"]      .overlayDot { background: var(--accent-gold);      }
 .overlayLink[data-accent="botanical"] .overlayDot { background: var(--accent-botanical);  }
 .overlayLink[data-accent="ember"]     .overlayDot { background: var(--accent-ember);      }
