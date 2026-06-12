@@ -1,4 +1,4 @@
-// cache-bust: force rebuild for updated headshot
+// AboutPreview — homepage card with real headshot; see About.jsx for the full /about page
 import { useNavigate } from 'react-router-dom';
 import headshotSrc from '../assets/about/headshot.jpg';
 import styles from './AboutPreview.module.css';
