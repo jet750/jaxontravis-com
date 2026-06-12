@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import headshotSrc from '../assets/about/headshot.jpg.jpg';
+import headshotSrc from '../assets/about/headshot.jpg';
 import styles from './AboutPreview.module.css';
 
 function Headshot() {

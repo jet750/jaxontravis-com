@@ -31,7 +31,13 @@ export default async function handler(req, res) {
     const stream = await client.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: systemPrompt,
+      system: [
+        {
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
       messages,
     });
 

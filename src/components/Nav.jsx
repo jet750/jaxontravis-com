@@ -44,54 +44,57 @@ export default function Nav() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <header
-      className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}
-      role="banner"
-    >
-      <div className={styles.inner}>
-        {/* Logo */}
-        <button
-          className={styles.logo}
-          onClick={handleLogoClick}
-          aria-label="Go to home"
-        >
-          Jaxon Travis
-        </button>
+    <>
+      <header
+        className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}
+        role="banner"
+      >
+        <div className={styles.inner}>
+          {/* Logo */}
+          <button
+            className={styles.logo}
+            onClick={handleLogoClick}
+            aria-label="Go to home"
+          >
+            Jaxon Travis
+          </button>
 
-        {/* Desktop links */}
-        <nav aria-label="Site navigation">
-          <ul className={styles.linkList}>
-            {NAV_LINKS.map(({ path, label, accent }) => (
-              <li key={path}>
-                <Link
-                  className={`${styles.link} ${isActive(path) ? styles.active : ''}`}
-                  data-accent={accent}
-                  to={path}
-                  aria-current={isActive(path) ? 'page' : undefined}
-                >
-                  <span className={styles.dot} aria-hidden="true" />
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+          {/* Desktop links */}
+          <nav aria-label="Site navigation">
+            <ul className={styles.linkList}>
+              {NAV_LINKS.map(({ path, label, accent }) => (
+                <li key={path}>
+                  <Link
+                    className={`${styles.link} ${isActive(path) ? styles.active : ''}`}
+                    data-accent={accent}
+                    to={path}
+                    aria-current={isActive(path) ? 'page' : undefined}
+                  >
+                    <span className={styles.dot} aria-hidden="true" />
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-        {/* Hamburger — mobile only */}
-        <button
-          className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
-          onClick={() => setMenuOpen((prev) => !prev)}
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={menuOpen}
-          aria-controls="mobile-menu"
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-      </div>
+          {/* Hamburger — mobile only */}
+          <button
+            className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+      </header>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay — rendered as sibling of header, not child, to avoid
+          backdrop-filter on the scrolled header breaking position:fixed */}
       <div
         id="mobile-menu"
         className={`${styles.overlay} ${menuOpen ? styles.overlayOpen : ''}`}
@@ -115,6 +118,6 @@ export default function Nav() {
           </ul>
         </nav>
       </div>
-    </header>
+    </>
   );
 }
