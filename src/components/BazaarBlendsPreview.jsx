@@ -1,4 +1,7 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { fadeInUp, DURATION, EASE } from '../lib/motion';
 import styles from './BazaarBlendsPreview.module.css';
 
 const BLENDS = [
@@ -19,13 +22,10 @@ const BLENDS = [
   },
 ];
 
-/* Intentional "Coming Soon" photo placeholder — styled as a product photo frame,
-   not a broken-image state. */
 function PhotoSlot() {
   return (
     <div className={styles.photoSlot} role="img" aria-label="Product photo coming soon">
       <div className={styles.photoInner} aria-hidden="true">
-        {/* Minimal aperture / lens icon */}
         <svg
           className={styles.photoIcon}
           viewBox="0 0 32 32"
@@ -34,7 +34,6 @@ function PhotoSlot() {
         >
           <circle cx="16" cy="16" r="9"  stroke="currentColor" strokeWidth="1.25" />
           <circle cx="16" cy="16" r="4"  stroke="currentColor" strokeWidth="1.25" />
-          {/* 6 aperture blades */}
           {[0, 60, 120, 180, 240, 300].map(deg => (
             <line
               key={deg}
@@ -53,52 +52,92 @@ function PhotoSlot() {
   );
 }
 
-function BlendTile({ blend }) {
+function BlendTile({ blend, index }) {
   return (
-    <article className={styles.tile}>
+    <motion.article
+      className={styles.tile}
+      variants={fadeInUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: DURATION, ease: EASE, delay: index * 0.08 }}
+      whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
+    >
       <PhotoSlot />
-
       <div className={styles.tileBody}>
         <h3 className={styles.tileName}>{blend.name}</h3>
         <p  className={styles.tileDescriptor}>{blend.descriptor}</p>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
 export default function BazaarBlendsPreview() {
   const navigate = useNavigate();
+  const sectionRef = useRef(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'start center'],
+  });
+  const sectionOpacity = useTransform(scrollYProgress, [0, 1], [0, 1]);
+  const sectionScale   = useTransform(scrollYProgress, [0, 1], [0.96, 1]);
 
   return (
-    <section className={styles.section} data-accent="ember">
+    <motion.section
+      ref={sectionRef}
+      className={styles.section}
+      data-accent="ember"
+      style={{ opacity: sectionOpacity, scale: sectionScale }}
+    >
       <div className={styles.container}>
 
         <header className={styles.header}>
           <span className={styles.eyebrow}>Artisan Studio</span>
-          <h2 className={styles.heading}>Bazaar Blends</h2>
-          <p className={styles.subhead}>
+          <motion.h2
+            className={styles.heading}
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            Bazaar Blends
+          </motion.h2>
+          <motion.p
+            className={styles.subhead}
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: DURATION, ease: EASE, delay: 0.1 }}
+          >
             Authentic regional spice blends sourced from the cultures that created them.
-          </p>
+          </motion.p>
         </header>
 
-        <div className={styles.tileGrid} role="list" aria-label="Featured Bazaar Blends">
-          {BLENDS.map(blend => (
+        <div
+          className={styles.tileGrid}
+          role="list"
+          aria-label="Featured Bazaar Blends"
+        >
+          {BLENDS.map((blend, index) => (
             <div key={blend.id} role="listitem">
-              <BlendTile blend={blend} />
+              <BlendTile blend={blend} index={index} />
             </div>
           ))}
         </div>
 
         <div className={styles.ctas}>
-          <button
+          <motion.button
             className={styles.ctaPrimary}
             onClick={() => navigate('/bazaar-blends')}
+            whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
           >
             Explore Bazaar Blends →
-          </button>
+          </motion.button>
         </div>
 
       </div>
-    </section>
+    </motion.section>
   );
 }

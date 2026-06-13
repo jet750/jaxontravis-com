@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import styles from './WorkSamples.module.css';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { trackEvent } from '../lib/analytics';
@@ -191,9 +192,15 @@ export default function WorkSamples() {
               <p className={styles.serverErr} role="alert">{serverError}</p>
             )}
 
-            <button type="submit" className={styles.ctaBtn} disabled={verifying}>
+            <motion.button
+              type="submit"
+              className={styles.ctaBtn}
+              disabled={verifying}
+              whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
+              whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
+            >
               {verifying ? 'Verifying…' : 'Unlock Work Samples →'}
-            </button>
+            </motion.button>
           </form>
         </div>
       </div>

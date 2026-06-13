@@ -1,9 +1,15 @@
-/* ─── Hero shell ─── */
+/* ─── Hero shell — provides the scroll space ─── */
 .hero {
-  min-height: 100dvh;
+  height: 200dvh;
+}
+
+/* ─── Sticky wrapper — the visible 100dvh viewport that stays in place ─── */
+.stickyWrapper {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  /* Push content below the fixed nav (~60px) without hard-coding px */
   padding-top: var(--space-2xl);
 }
 
@@ -17,25 +23,6 @@
   text-align: center;
   padding: var(--space-xl) var(--space-xl) var(--space-2xl);
   gap: var(--space-md);
-}
-
-/* ─── Staggered fade-up on load ─── */
-.location,
-.name,
-.discipline,
-.tagline,
-.scrollHint {
-  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.location    { animation-delay: 0.05s; }
-.name        { animation-delay: 0.15s; }
-.discipline  { animation-delay: 0.25s; }
-.tagline     { animation-delay: 0.35s; }
-.scrollHint  { animation-delay: 0.6s; }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ─── Location eyebrow ─── */
@@ -56,7 +43,7 @@
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-tight);
   color: var(--color-parchment);
-  margin: 0; /* override global h1 */
+  margin: 0;
 }
 
 /* ─── Color-coded discipline line ─── */
@@ -156,7 +143,6 @@
   position: relative;
   overflow: hidden;
   transition: background 0.25s ease;
-  /* Ensure consistent card height */
   min-height: 180px;
 }
 
@@ -263,8 +249,6 @@
     gap: var(--space-sm);
   }
 
-  /* --text-display bottoms out at 3.5rem, which can overflow a 320px
-     viewport — scale with viewport width instead on small phones */
   .name {
     font-size: clamp(2.5rem, 15vw, 3.5rem);
   }
@@ -284,18 +268,15 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Reset desktop border logic */
   .cardItem {
     border-right: 1px solid var(--color-ember-edge);
     border-bottom: 1px solid var(--color-ember-edge);
   }
 
-  /* Right column: no right border */
   .cardItem:nth-child(2n) {
     border-right: none;
   }
 
-  /* Bottom row: no bottom border */
   .cardItem:nth-last-child(-n+2) {
     border-bottom: none;
   }

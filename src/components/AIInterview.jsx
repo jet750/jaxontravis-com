@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import styles from './AIInterview.module.css';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { trackEvent } from '../lib/analytics';
@@ -353,20 +354,22 @@ export default function AIInterview() {
                 disabled={isStreaming}
                 aria-label="Your message"
               />
-              <button
+              <motion.button
                 type="submit"
                 className={styles.sendBtn}
                 disabled={isStreaming || !chatInput.trim()}
                 aria-label="Send message"
+                whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
+                whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
               >
                 {isStreaming ? '…' : 'Send →'}
-              </button>
+              </motion.button>
             </form>
           </div>
 
           {hasRealUserMsg && (
             <div className={styles.transcriptBar}>
-              <button
+              <motion.button
                 type="button"
                 className={`${styles.emailBtn}${
                   emailStatus === 'sent'  ? ` ${styles.emailBtnSent}`  :
@@ -374,13 +377,15 @@ export default function AIInterview() {
                 }`}
                 onClick={doSend}
                 disabled={emailStatus === 'sending'}
+                whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
+                whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
               >
                 {emailStatus === 'sending' ? 'Sending…'
                  : emailStatus === 'sent'  ? 'Sent ✓'
                  : emailStatus === 'error' ? 'Failed — try again'
                  : transcriptSent          ? 'Send updated copy'
                  :                           'Email this conversation'}
-              </button>
+              </motion.button>
               <p className={styles.emailCaption}>
                 This conversation auto-sends a summary after 10 minutes of inactivity or when
                 you leave. If you've already received one, exporting again sends an updated copy.
@@ -391,9 +396,14 @@ export default function AIInterview() {
           {showPostCta && (
             <div className={styles.postCta}>
               <p className={styles.postCtaHeadline}>Convinced? Let's talk directly.</p>
-              <a href="mailto:jaxontravis7@gmail.com" className={styles.postCtaLink}>
+              <motion.a
+                href="mailto:jaxontravis7@gmail.com"
+                className={styles.postCtaLink}
+                whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
+                whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
+              >
                 Book a real call →
-              </a>
+              </motion.a>
             </div>
           )}
         </div>
@@ -503,7 +513,7 @@ export default function AIInterview() {
                         placeholder="https://jobs.example.com/…"
                         autoComplete="off"
                       />
-                      <button
+                      <motion.button
                         type="button"
                         className={`${styles.fetchBtn} ${
                           fetchStatus === 'done' ? styles.fetchBtnOk : ''
@@ -511,10 +521,12 @@ export default function AIInterview() {
                         onClick={handleFetchJD}
                         disabled={!jobUrl.trim() || fetchStatus === 'fetching'}
                         aria-label="Fetch job description from URL"
+                        whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
+                        whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
                       >
                         {fetchStatus === 'fetching' ? '…' :
                          fetchStatus === 'done'     ? '✓' : 'Fetch'}
-                      </button>
+                      </motion.button>
                     </div>
                     {fetchStatus === 'done'  && (
                       <p className={styles.okMsg}>Job description loaded.</p>
@@ -524,13 +536,15 @@ export default function AIInterview() {
                         Couldn't load that URL — try pasting instead.
                       </p>
                     )}
-                    <button
+                    <motion.button
                       type="button"
                       className={styles.toggleLink}
                       onClick={() => setShowPaste(true)}
+                      whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
+                      whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
                     >
                       Paste instead →
-                    </button>
+                    </motion.button>
                   </div>
                 ) : (
                   <div className={styles.field}>
@@ -545,7 +559,7 @@ export default function AIInterview() {
                       placeholder="Paste the full job description here…"
                       rows={7}
                     />
-                    <button
+                    <motion.button
                       type="button"
                       className={styles.toggleLink}
                       onClick={() => {
@@ -553,16 +567,23 @@ export default function AIInterview() {
                         setJobText('');
                         setFetchStatus('idle');
                       }}
+                      whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
+                      whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
                     >
                       ← Use URL instead
-                    </button>
+                    </motion.button>
                   </div>
                 )}
               </fieldset>
 
-              <button type="submit" className={styles.ctaBtn}>
+              <motion.button
+                type="submit"
+                className={styles.ctaBtn}
+                whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
+                whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
+              >
                 Enter the Interview →
-              </button>
+              </motion.button>
             </form>
           </div>
 

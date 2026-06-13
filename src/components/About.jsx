@@ -1,6 +1,9 @@
+import { motion } from 'framer-motion';
+import { fadeInUp, DURATION, EASE } from '../lib/motion';
+import { trackEvent } from '../lib/analytics';
 import headshotSrc from '../assets/about/headshot.jpg';
+import resumePdf from '../assets/about/resume.pdf';
 import styles from './About.module.css';
-import { useScrollReveal } from '../hooks/useScrollReveal';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -44,6 +47,10 @@ const CONTACT = [
     href:  '#',
   },
 ];
+
+// ── Shared whileInView props (reused across all blocks) ───────────────────────
+
+const VIEW = { once: true, amount: 0.3 };
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
 
@@ -92,20 +99,31 @@ function IconPin() {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function About() {
-  const [containerRef, revealed] = useScrollReveal();
   return (
     <section id="about" className={styles.section} data-accent="cerulean">
-      <div className={styles.container} ref={containerRef} data-reveal={revealed ? 'true' : 'false'}>
+      <div className={styles.container}>
 
-        {/* ── Section header ── */}
-        <header className={styles.sectionTop}>
+        {/* ── Block 1: Section header — delay 0 ── */}
+        <motion.header
+          className={styles.sectionTop}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+        >
           <span className={styles.eyebrow}>ABOUT</span>
           <h2 className={styles.heading}>The Through-Line</h2>
-        </header>
+        </motion.header>
 
-        {/* ── Bio block — photo + text ── */}
-        <div className={styles.bioBlock}>
-
+        {/* ── Block 2: Bio — delay 0.1s ── */}
+        <motion.div
+          className={styles.bioBlock}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.1 }}
+        >
           {/* Left: photo + location */}
           <div className={styles.photoWrap}>
             <div className={styles.photoPlaceholder}>
@@ -118,7 +136,6 @@ export default function About() {
                   e.currentTarget.nextElementSibling.style.display = 'flex';
                 }}
               />
-              {/* Fallback initials — hidden when photo loads */}
               <span className={styles.initials} style={{ display: 'none' }} aria-hidden="true">JT</span>
             </div>
 
@@ -152,7 +169,6 @@ export default function About() {
               </p>
             </div>
 
-            {/* Role chips */}
             <div className={styles.rolesBlock}>
               <span className={styles.rolesLabel}>Open to</span>
               <ul className={styles.roleChips} aria-label="Target roles">
@@ -162,10 +178,17 @@ export default function About() {
               </ul>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* ── Skills ── */}
-        <div className={styles.skillsBlock}>
+        {/* ── Block 3: Skills — delay 0.2s ── */}
+        <motion.div
+          className={styles.skillsBlock}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.2 }}
+        >
           <span className={styles.skillsEyebrow}>SKILL INVENTORY</span>
 
           <div className={styles.skillsGrid}>
@@ -180,10 +203,17 @@ export default function About() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* ── Contact row ── */}
-        <div className={styles.contactBlock}>
+        {/* ── Block 4: Contact — delay 0.3s ── */}
+        <motion.div
+          className={styles.contactBlock}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.3 }}
+        >
           <ul className={styles.contactList} aria-label="Contact">
             {CONTACT.map(item => (
               <li key={item.type}>
@@ -203,7 +233,70 @@ export default function About() {
               </li>
             ))}
           </ul>
-        </div>
+        </motion.div>
+
+        {/* ── Block 5: Resume — delay 0.4s ── */}
+        {/* Outer container animates; the <object> embed inside does NOT */}
+        <motion.div
+          className={styles.resumeBlock}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.4 }}
+        >
+          <span className={styles.resumeEyebrow}>RESUME</span>
+
+          {/* Plain div — <object> is not wrapped in a motion element */}
+          <div className={styles.resumeViewerWrap}>
+            <object
+              data={resumePdf}
+              type="application/pdf"
+              width="100%"
+              height="950px"
+            >
+              <p className={styles.pdfFallback}>
+                Your browser doesn't support embedded PDFs.{' '}
+                <a href={resumePdf} target="_blank" rel="noopener noreferrer">
+                  View the resume here
+                </a>.
+              </p>
+            </object>
+          </div>
+
+          {/* Desktop: download button */}
+          <motion.a
+            href={resumePdf}
+            download="Jaxon-Travis-Resume.pdf"
+            className={`${styles.resumeBtn} ${styles.desktopDownload}`}
+            onClick={() => trackEvent('resume_download')}
+            whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+          >
+            Download Resume
+          </motion.a>
+
+          {/* Mobile: view + download buttons */}
+          <div className={styles.mobileResumeActions}>
+            <motion.a
+              href={resumePdf}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.resumeBtn}
+              whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+            >
+              View Resume
+            </motion.a>
+            <motion.a
+              href={resumePdf}
+              download="Jaxon-Travis-Resume.pdf"
+              className={`${styles.resumeBtn} ${styles.resumeBtnSecondary}`}
+              onClick={() => trackEvent('resume_download')}
+              whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+            >
+              Download
+            </motion.a>
+          </div>
+        </motion.div>
 
       </div>
     </section>

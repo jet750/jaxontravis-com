@@ -1,5 +1,6 @@
+import { motion } from 'framer-motion';
+import { fadeInUp, staggerContainer, DURATION, EASE } from '../lib/motion';
 import styles from './ArtisanStudio.module.css';
-import { useScrollReveal } from '../hooks/useScrollReveal';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -63,28 +64,26 @@ const PROJECTS = [
   },
 ];
 
+// ── Shared viewport config ────────────────────────────────────────────────────
+
+const VIEW = { once: true, amount: 0.3 };
+
 // ── Inline SVG art ────────────────────────────────────────────────────────────
 
 function GarlicArt() {
   return (
     <svg className={styles.artSvg} viewBox="0 0 80 80" fill="none" aria-hidden="true">
-      {/* Outer bulb */}
       <path
         d="M20 55 Q18 41 26 31 Q31 24 40 22 Q49 24 54 31 Q62 41 60 55 Q54 64 40 66 Q26 64 20 55Z"
         stroke="currentColor" strokeWidth="1" fill="currentColor" fillOpacity="0.1"
       />
-      {/* Clove division lines */}
       <path d="M40 22 Q38 42 40 66" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" />
       <path d="M34 26 Q28 44 29 62"  stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" />
       <path d="M46 26 Q52 44 51 62"  stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" />
-      {/* Side clove hints */}
       <path d="M20 49 Q19 43 21 38" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" />
       <path d="M60 49 Q61 43 59 38" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" />
-      {/* Stem */}
       <path d="M40 22 C39 15 40 10 40 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-      {/* Base plate */}
       <path d="M28 63 Q34 68 40 66 Q46 68 52 63" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
-      {/* Root threads */}
       <path d="M30 65 Q28 70 27 74" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" />
       <path d="M35 66 Q34 72 34 76" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" />
       <path d="M40 66 L40 76"        stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" />
@@ -97,28 +96,21 @@ function GarlicArt() {
 function HerbArt() {
   return (
     <svg className={styles.artSvg} viewBox="0 0 80 80" fill="none" aria-hidden="true">
-      {/* Main stem */}
       <path d="M40 74 C40 60 40 46 40 16" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-      {/* Bottom leaf pair */}
       <path d="M40 64 C32 59 23 55 19 49 C24 46 34 51 40 62Z"
         stroke="currentColor" strokeWidth="0.85" fill="currentColor" fillOpacity="0.1" />
       <path d="M40 64 C48 59 57 55 61 49 C56 46 46 51 40 62Z"
         stroke="currentColor" strokeWidth="0.85" fill="currentColor" fillOpacity="0.1" />
-      {/* Bottom leaf veins */}
       <path d="M19 49 C28 52 35 56 40 64" stroke="currentColor" strokeWidth="0.4" />
       <path d="M61 49 C52 52 45 56 40 64" stroke="currentColor" strokeWidth="0.4" />
-      {/* Middle leaf pair */}
       <path d="M40 50 C32 44 23 39 20 33 C25 30 35 36 40 48Z"
         stroke="currentColor" strokeWidth="0.85" fill="currentColor" fillOpacity="0.1" />
       <path d="M40 50 C48 44 57 39 60 33 C55 30 45 36 40 48Z"
         stroke="currentColor" strokeWidth="0.85" fill="currentColor" fillOpacity="0.1" />
-      {/* Middle leaf veins */}
       <path d="M20 33 C29 37 36 42 40 50" stroke="currentColor" strokeWidth="0.4" />
       <path d="M60 33 C51 37 44 42 40 50" stroke="currentColor" strokeWidth="0.4" />
-      {/* Top leaf */}
       <path d="M40 34 C35 25 35 17 40 14 C45 17 45 25 40 34Z"
         stroke="currentColor" strokeWidth="0.85" fill="currentColor" fillOpacity="0.12" />
-      {/* Top leaf vein */}
       <path d="M40 14 C40 21 40 28 40 34" stroke="currentColor" strokeWidth="0.4" />
     </svg>
   );
@@ -128,7 +120,6 @@ function AniseArt() {
   const arms = [0, 45, 90, 135, 180, 225, 270, 315];
   return (
     <svg className={styles.artSvg} viewBox="0 0 80 80" fill="none" aria-hidden="true">
-      {/* 8 carpels */}
       {arms.map(deg => (
         <path
           key={deg}
@@ -138,11 +129,9 @@ function AniseArt() {
           transform={`rotate(${deg} 40 40)`}
         />
       ))}
-      {/* Inner ring */}
       <circle cx="40" cy="40" r="10"
         stroke="currentColor" strokeWidth="0.7"
         fill="currentColor" fillOpacity="0.06" />
-      {/* Spoke lines */}
       {arms.map(deg => (
         <line key={deg}
           x1="40" y1="35" x2="40" y2="26"
@@ -150,11 +139,9 @@ function AniseArt() {
           transform={`rotate(${deg} 40 40)`}
         />
       ))}
-      {/* Center hub */}
       <circle cx="40" cy="40" r="5"
         stroke="currentColor" strokeWidth="0.9"
         fill="currentColor" fillOpacity="0.25" />
-      {/* Seeds at tips */}
       {arms.map(deg => (
         <circle key={deg}
           cx="40" cy="14" r="1.8"
@@ -170,7 +157,13 @@ function AniseArt() {
 
 function BlendCard({ blend }) {
   return (
-    <article className={styles.card} data-art={blend.artType}>
+    <motion.article
+      className={styles.card}
+      data-art={blend.artType}
+      variants={fadeInUp}
+      initial="hidden"
+      whileHover={{ scale: 1.03, y: -4, transition: { duration: 0.2 } }}
+    >
       <div className={styles.cardArt}>
         <div className={styles.artBadge}>
           {blend.artType === 'garlic' && <GarlicArt />}
@@ -190,20 +183,25 @@ function BlendCard({ blend }) {
           ))}
         </ul>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ArtisanStudio() {
-  const [containerRef, revealed] = useScrollReveal();
   return (
     <section id="artisan-studio" className={styles.section} data-accent="ember">
-      <div className={styles.container} ref={containerRef} data-reveal={revealed ? 'true' : 'false'}>
+      <div className={styles.container}>
 
-        {/* ── Section header ── */}
-        <header className={styles.sectionTop}>
+        {/* ── Block 1: Section header — delay 0 ── */}
+        <motion.header
+          className={styles.sectionTop}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+        >
           <span className={styles.eyebrow}>ARTISAN STUDIO</span>
 
           <div className={styles.headingRow}>
@@ -219,10 +217,17 @@ export default function ArtisanStudio() {
             Authentic regional spice blends sourced from the cultures that created
             them. Coming to bazaarblends.com.
           </p>
-        </header>
+        </motion.header>
 
-        {/* ── Philosophy block ── */}
-        <div className={styles.philosophy}>
+        {/* ── Block 2: Philosophy — delay 0.1s ── */}
+        <motion.div
+          className={styles.philosophy}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.1 }}
+        >
           <div className={styles.philosophyInner}>
             <span className={styles.philosophyEyebrow}>Our Philosophy</span>
             <blockquote className={styles.philosophyQuote}>
@@ -235,23 +240,46 @@ export default function ArtisanStudio() {
               been making these blends for generations.
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        {/* ── Featured blends ── */}
-        <div className={styles.blendHeader}>
+        {/* ── Block 3: Blend grid label — delay 0.2s ── */}
+        <motion.div
+          className={styles.blendHeader}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.2 }}
+        >
           <span className={styles.blendEyebrow}>FIRST RELEASE — THREE BLENDS</span>
-        </div>
+        </motion.div>
 
-        <div className={styles.cardGrid} role="list" aria-label="Featured blends">
+        {/* ── Block 4: Blend card grid — staggerContainer, independent whileInView ── */}
+        <motion.div
+          className={styles.cardGrid}
+          role="list"
+          aria-label="Featured blends"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+        >
           {BLENDS.map(blend => (
             <div key={blend.name} role="listitem">
               <BlendCard blend={blend} />
             </div>
           ))}
-        </div>
+        </motion.div>
 
-        {/* ── Recipe value proposition ── */}
-        <div className={styles.valueBlock}>
+        {/* ── Block 5: Value props — delay 0.3s ── */}
+        <motion.div
+          className={styles.valueBlock}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.3 }}
+        >
           <header className={styles.valueHeader}>
             <span className={styles.valueEyebrow}>WHY BAZAAR BLENDS</span>
             <h3 className={styles.valueHeading}>Built different from the shelf.</h3>
@@ -266,10 +294,17 @@ export default function ArtisanStudio() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* ── Culinary projects row ── */}
-        <div className={styles.projectsBlock}>
+        {/* ── Block 6: Culinary projects — delay 0.4s ── */}
+        <motion.div
+          className={styles.projectsBlock}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.4 }}
+        >
           <div className={styles.projectsDivider} aria-hidden="true">
             <span className={styles.dividerLine} />
             <span className={styles.dividerLabel}>The Bazaar Blends Universe</span>
@@ -292,22 +327,33 @@ export default function ArtisanStudio() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* ── CTAs ── */}
-        <div className={styles.ctas}>
-          <button className={styles.ctaPrimary}>
+        {/* ── Block 7: CTAs — delay 0.5s ── */}
+        <motion.div
+          className={styles.ctas}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.5 }}
+        >
+          <motion.button
+            className={styles.ctaPrimary}
+            whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
+          >
             Notify me at launch →
-          </button>
-          <a
+          </motion.button>
+          <motion.a
             href="https://instagram.com"
             className={styles.ctaOutline}
             target="_blank"
             rel="noopener noreferrer"
+            whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
           >
             Follow on Instagram →
-          </a>
-        </div>
+          </motion.a>
+        </motion.div>
 
       </div>
     </section>

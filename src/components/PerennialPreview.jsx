@@ -1,4 +1,7 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { fadeInUp, DURATION, EASE } from '../lib/motion';
 import birdsOfParadiseImg     from '../assets/perennial/card-birds-of-paradise.png';
 import saguaroCactusImg       from '../assets/perennial/card-saguaro-cactus.png';
 import blueMorphoButterflyImg from '../assets/perennial/card-blue-morpho-butterfly.png';
@@ -47,11 +50,7 @@ function ImageZone({ id, name, imgSrc, tier, archetype }) {
         onError={(e) => { e.currentTarget.style.display = 'none'; }}
         loading="lazy"
       />
-
-      {/* Gradient vignette — always present for badge legibility */}
       <div className={styles.vignette} aria-hidden="true" />
-
-      {/* Tier + archetype badges */}
       <div className={styles.artMeta}>
         {tier && <span className={styles.tierBadge}>{tier}</span>}
         <span className={styles.archetypeTag}>{archetype}</span>
@@ -60,9 +59,17 @@ function ImageZone({ id, name, imgSrc, tier, archetype }) {
   );
 }
 
-function PreviewCard({ card }) {
+function PreviewCard({ card, index }) {
   return (
-    <article className={styles.card}>
+    <motion.article
+      className={styles.card}
+      variants={fadeInUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: DURATION, ease: EASE, delay: index * 0.08 }}
+      whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
+    >
       <ImageZone
         id={card.id}
         name={card.name}
@@ -70,7 +77,6 @@ function PreviewCard({ card }) {
         tier={card.tier}
         archetype={card.archetype}
       />
-
       <div className={styles.cardBody}>
         <h3 className={styles.cardName}>{card.name}</h3>
         <p className={styles.cardEffect}>
@@ -80,44 +86,77 @@ function PreviewCard({ card }) {
         <div className={styles.bodyDivider} aria-hidden="true" />
         <p className={styles.cardDescriptor}>{card.descriptor}</p>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
 export default function PerennialPreview() {
   const navigate = useNavigate();
+  const sectionRef = useRef(null);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'start center'],
+  });
+  const sectionOpacity = useTransform(scrollYProgress, [0, 1], [0, 1]);
+  const sectionScale   = useTransform(scrollYProgress, [0, 1], [0.96, 1]);
 
   return (
-    <section className={styles.section} data-accent="botanical">
+    <motion.section
+      ref={sectionRef}
+      className={styles.section}
+      data-accent="botanical"
+      style={{ opacity: sectionOpacity, scale: sectionScale }}
+    >
       <div className={styles.container}>
 
         <header className={styles.header}>
           <span className={styles.eyebrow}>Game Design</span>
-          <h2 className={styles.heading}>Perennial: A Cultivar Anthology</h2>
-          <p className={styles.subhead}>
+          <motion.h2
+            className={styles.heading}
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            Perennial: A Cultivar Anthology
+          </motion.h2>
+          <motion.p
+            className={styles.subhead}
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: DURATION, ease: EASE, delay: 0.1 }}
+          >
             A botanical engine-building card game for 2–4 players.
             10 growing seasons. 4 biomes.
-          </p>
+          </motion.p>
         </header>
 
-        <div className={styles.cardGrid} role="list" aria-label="Featured Perennial cards">
-          {CARDS.map(card => (
+        <div
+          className={styles.cardGrid}
+          role="list"
+          aria-label="Featured Perennial cards"
+        >
+          {CARDS.map((card, index) => (
             <div key={card.id} role="listitem">
-              <PreviewCard card={card} />
+              <PreviewCard card={card} index={index} />
             </div>
           ))}
         </div>
 
         <div className={styles.ctas}>
-          <button
+          <motion.button
             className={styles.ctaPrimary}
             onClick={() => navigate('/perennial')}
+            whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
           >
             Explore Perennial →
-          </button>
+          </motion.button>
         </div>
 
       </div>
-    </section>
+    </motion.section>
   );
 }

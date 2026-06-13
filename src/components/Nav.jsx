@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import styles from './Nav.module.css';
 
 const NAV_LINKS = [
@@ -65,7 +66,10 @@ export default function Nav() {
           <nav aria-label="Site navigation">
             <ul className={styles.linkList}>
               {NAV_LINKS.map(({ path, label, accent }) => (
-                <li key={path}>
+                <motion.li
+                  key={path}
+                  whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
+                >
                   <Link
                     className={`${styles.link} ${isActive(path) ? styles.active : ''}`}
                     data-accent={accent}
@@ -75,7 +79,7 @@ export default function Nav() {
                     <span className={styles.dot} aria-hidden="true" />
                     {label}
                   </Link>
-                </li>
+                </motion.li>
               ))}
             </ul>
           </nav>
@@ -104,7 +108,7 @@ export default function Nav() {
       >
         <nav aria-label="Mobile site navigation">
           <ul className={styles.overlayList}>
-            <li>
+            <motion.li whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}>
               <Link
                 className={`${styles.overlayLink} ${isActive('/') ? styles.overlayActive : ''}`}
                 data-accent="home"
@@ -114,9 +118,12 @@ export default function Nav() {
                 <span className={styles.overlayDot} aria-hidden="true" />
                 Home
               </Link>
-            </li>
+            </motion.li>
             {NAV_LINKS.map(({ path, label, accent }) => (
-              <li key={path}>
+              <motion.li
+                key={path}
+                whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
+              >
                 <Link
                   className={`${styles.overlayLink} ${isActive(path) ? styles.overlayActive : ''}`}
                   data-accent={accent}
@@ -126,7 +133,7 @@ export default function Nav() {
                   <span className={styles.overlayDot} aria-hidden="true" />
                   {label}
                 </Link>
-              </li>
+              </motion.li>
             ))}
           </ul>
         </nav>
