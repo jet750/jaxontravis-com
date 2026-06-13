@@ -141,15 +141,30 @@ export default async function handler(req, res) {
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: 'AI Interview <notifications@mail.jaxontravis.com>',
       to: [recipientEmail, 'jaxontravis7@gmail.com'],
       subject,
       html: emailHtml,
     });
+
+    // Resend v3+ returns { data, error } rather than throwing on API errors.
+    if (result?.error) {
+      console.error('[send-transcript] Resend API error:', JSON.stringify(result.error));
+      return res.status(500).json({
+        error: 'Failed to send transcript email',
+        detail: result.error,
+      });
+    }
   } catch (err) {
-    console.error('[send-transcript] Resend error:', err?.message ?? err);
-    return res.status(500).json({ error: 'Failed to send transcript email' });
+    console.error(
+      '[send-transcript] Resend threw:',
+      JSON.stringify({ name: err?.name, message: err?.message, statusCode: err?.statusCode, cause: err?.cause }),
+    );
+    return res.status(500).json({
+      error: 'Failed to send transcript email',
+      detail: { name: err?.name, message: err?.message, statusCode: err?.statusCode },
+    });
   }
 
   return res.status(200).json({ ok: true });
