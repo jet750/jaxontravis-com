@@ -6,9 +6,9 @@ import styles from './GameDesign.module.css';
 // Real card art (found in src/assets/perennial/). Mapped to the featured
 // cards by position below; if any image fails to load, TiltCard falls back
 // to the inline SVG art passed as fallbackContent.
-import cardBirdsOfParadise from '../assets/perennial/card-birds-of-paradise.png';
-import cardSaguaroCactus from '../assets/perennial/card-saguaro-cactus.png';
-import cardBlueMorphoButterfly from '../assets/perennial/card-blue-morpho-butterfly.png';
+import cardBirdsOfParadise from '../assets/perennial/card-birds-of-paradise.webp';
+import cardSaguaroCactus from '../assets/perennial/card-saguaro-cactus.webp';
+import cardBlueMorphoButterfly from '../assets/perennial/card-blue-morpho-butterfly.webp';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 

@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { fadeInUp, DURATION, EASE } from '../lib/motion';
-import birdsOfParadiseImg     from '../assets/perennial/card-birds-of-paradise.png';
-import saguaroCactusImg       from '../assets/perennial/card-saguaro-cactus.png';
-import blueMorphoButterflyImg from '../assets/perennial/card-blue-morpho-butterfly.png';
+import birdsOfParadiseImg     from '../assets/perennial/card-birds-of-paradise.webp';
+import saguaroCactusImg       from '../assets/perennial/card-saguaro-cactus.webp';
+import blueMorphoButterflyImg from '../assets/perennial/card-blue-morpho-butterfly.webp';
 import styles from './PerennialPreview.module.css';
 
 const CARDS = [
