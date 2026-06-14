@@ -1,19 +1,12 @@
-/* ─── Hero shell — provides the scroll space ─── */
+/* ─── Hero shell ─── */
 .hero {
-  height: 200dvh;
-}
-
-/* ─── Sticky wrapper — the visible 100dvh viewport that stays in place ─── */
-.stickyWrapper {
-  position: sticky;
-  top: 0;
-  height: 100dvh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding-top: var(--space-2xl);
+  background: var(--color-obsidian);
 }
 
-/* ─── Main content area ─── */
+/* ─── Main content area — fills space above the cards ─── */
 .content {
   flex: 1;
   display: flex;
@@ -21,8 +14,10 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--space-xl) var(--space-xl) var(--space-2xl);
+  padding: var(--space-3xl) var(--space-xl) var(--space-2xl);
   gap: var(--space-md);
+  /* Push content down below the fixed nav (≈76px) */
+  padding-top: calc(var(--space-3xl) + 76px);
 }
 
 /* ─── Location eyebrow ─── */
@@ -114,21 +109,22 @@
 }
 
 /* ─────────────────────────────────────────
-   Entry cards
+   Entry cards — mobile-first:
+   4×1 default → 2×2 at 540px → 1×4 at 900px
 ───────────────────────────────────────── */
 .cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr;
   border-top: 1px solid var(--color-ember-edge);
 }
 
 /* ─── Card wrapper (border management) ─── */
 .cardItem {
-  border-right: 1px solid var(--color-ember-edge);
+  border-bottom: 1px solid var(--color-ember-edge);
 }
 
 .cardItem:last-child {
-  border-right: none;
+  border-bottom: none;
 }
 
 /* ─── Card button ─── */
@@ -138,12 +134,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-  padding: var(--space-lg) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   text-align: left;
   position: relative;
   overflow: hidden;
   transition: background 0.25s ease;
-  min-height: 180px;
+  min-height: 100px;
 }
 
 /* Accent bar — slides in from left on hover */
@@ -246,6 +242,7 @@
 @media (max-width: 639px) {
   .content {
     padding: var(--space-lg) var(--space-sm) var(--space-xl);
+    padding-top: calc(var(--space-lg) + 76px);
     gap: var(--space-sm);
   }
 
@@ -262,8 +259,8 @@
   }
 }
 
-/* Mobile: 2×2 card grid */
-@media (max-width: 767px) {
+/* 2×2 grid at 540px+ */
+@media (min-width: 540px) {
   .cards {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -282,26 +279,28 @@
   }
 
   .card {
-    min-height: 160px;
+    min-height: 130px;
     padding: var(--space-md) var(--space-sm);
   }
 }
 
-/* Tablet and up: restore 4-col layout */
-@media (min-width: 768px) {
+/* 1×4 single row at 900px+ */
+@media (min-width: 900px) {
+  .cards {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
   .cardItem {
+    border-right: 1px solid var(--color-ember-edge);
     border-bottom: none;
   }
-}
 
-/* Compact content height on short viewports */
-@media (max-height: 600px) {
-  .content {
-    justify-content: flex-start;
-    padding-top: var(--space-xl);
+  .cardItem:last-child {
+    border-right: none;
   }
 
-  .scrollHint {
-    display: none;
+  .card {
+    min-height: 160px;
+    padding: var(--space-lg) var(--space-md);
   }
 }

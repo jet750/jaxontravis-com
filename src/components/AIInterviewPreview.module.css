@@ -2,6 +2,14 @@
 .section {
   padding: var(--space-5xl) var(--space-xl);
   border-top: 1px solid var(--color-ember-edge);
+  /* Opaque block stacked above the hero. The hero's sticky card frame can
+     overflow its 100dvh box on short/narrow viewports; without this, that
+     overflow bled through here as a stray line + doubled "PROFESSIONAL"
+     eyebrow. The solid background + z-index make this border-top a clean
+     divider and keep the two sections from visually overlapping. */
+  position:   relative;
+  z-index:    1;
+  background: var(--color-obsidian);
 }
 
 .container {

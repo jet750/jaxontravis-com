@@ -53,9 +53,13 @@
 .cardGrid {
   display:               grid;
   grid-template-columns: repeat(3, 1fr);
-  gap:                   var(--space-lg);
+  gap:                   var(--space-md);
   margin-bottom:         var(--space-3xl);
   align-items:           start;
+  /* 3-up teaser row, bounded so the cards read as a "mention" and the
+     section never fills the viewport. ~210px per card on desktop. */
+  max-width:             680px;
+  margin-inline:         auto;
 }
 
 /* ─── Card frame ─── */
@@ -241,6 +245,9 @@
   .cardGrid {
     grid-template-columns: 1fr;
     gap: var(--space-md);
+    /* Stacked single card — cap width so the tall 5:7 art doesn't
+       take over the screen on phones / narrow windows. */
+    max-width: 240px;
   }
 }
 
@@ -248,5 +255,7 @@
   .cardGrid {
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-sm);
+    /* Keep 3-up but a touch narrower at tablet/half-screen widths. */
+    max-width: 560px;
   }
 }

@@ -1,6 +1,14 @@
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer, DURATION, EASE } from '../lib/motion';
+import TiltCard from './TiltCard';
 import styles from './GameDesign.module.css';
+
+// Real card art (found in src/assets/perennial/). Mapped to the featured
+// cards by position below; if any image fails to load, TiltCard falls back
+// to the inline SVG art passed as fallbackContent.
+import cardBirdsOfParadise from '../assets/perennial/card-birds-of-paradise.png';
+import cardSaguaroCactus from '../assets/perennial/card-saguaro-cactus.png';
+import cardBlueMorphoButterfly from '../assets/perennial/card-blue-morpho-butterfly.png';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -13,28 +21,31 @@ const CHIPS = [
 
 const FEATURED_CARDS = [
   {
-    name:      'Stargazer Lily',
+    name:      'Birds of Paradise',
     tier:      'T3',
     archetype: 'Flowering',
     mechanic:  'End of season: place 3 Pollen tokens on adjacent plant spaces.',
     flavor:    'Bred for spectacle. Built for the long season.',
-    artType:   'lily',
+    artType:   'birds',
+    image:     cardBirdsOfParadise,
   },
   {
-    name:      'Sundew',
+    name:      'Saguaro Cactus',
     tier:      'T2',
-    archetype: 'Carnivorous',
-    mechanic:  'Trap — Trigger: when any insect card enters play, draw 1 card.',
-    flavor:    'The bog never hurries. The trap never misses.',
-    artType:   'sundew',
+    archetype: 'Succulent',
+    mechanic:  'Drought — immune to dry-season discard. Store 2 Water tokens each season.',
+    flavor:    'A century of patience, measured in inches.',
+    artType:   'saguaro',
+    image:     cardSaguaroCactus,
   },
   {
-    name:      'Honey Bee',
+    name:      'Blue Morpho Butterfly',
     tier:      null,
     archetype: 'Pollinator',
     mechanic:  'Pollinate: move to any adjacent plant and transfer all Pollen tokens.',
-    flavor:    'Colony logic encoded in every foraging route.',
-    artType:   'bee',
+    flavor:    'Iridescence is a defense. Beauty, a strategy.',
+    artType:   'morpho',
+    image:     cardBlueMorphoButterfly,
   },
 ];
 
@@ -192,37 +203,13 @@ function BeeArt() {
   );
 }
 
-// ── Card placeholder ──────────────────────────────────────────────────────────
+// ── Fallback SVG art lookup (used when a card image is missing or fails) ───────
 
-function CardPlaceholder({ card }) {
-  return (
-    <motion.article
-      className={styles.card}
-      data-art={card.artType}
-      variants={fadeInUp}
-      initial="hidden"
-      whileHover={{ scale: 1.03, y: -4, transition: { duration: 0.2 } }}
-    >
-      <div className={styles.cardArt}>
-        <div className={styles.artIllustration}>
-          {card.artType === 'lily'   && <LilyArt />}
-          {card.artType === 'sundew' && <SundewArt />}
-          {card.artType === 'bee'    && <BeeArt />}
-        </div>
-        <div className={styles.artMeta}>
-          {card.tier && <span className={styles.tierBadge}>{card.tier}</span>}
-          <span className={styles.archetypeTag}>{card.archetype}</span>
-        </div>
-      </div>
-
-      <div className={styles.cardBody}>
-        <h3 className={styles.cardName}>{card.name}</h3>
-        <p  className={styles.cardMechanic}>{card.mechanic}</p>
-        <p  className={styles.cardFlavor}>"{card.flavor}"</p>
-      </div>
-    </motion.article>
-  );
-}
+const FALLBACK_ART = {
+  birds:   <LilyArt />,
+  saguaro: <SundewArt />,
+  morpho:  <BeeArt />,
+};
 
 // ── Spinoff card ──────────────────────────────────────────────────────────────
 
@@ -313,10 +300,27 @@ export default function GameDesign() {
           whileInView="visible"
           viewport={VIEW}
         >
-          {FEATURED_CARDS.map(card => (
-            <div key={card.name} role="listitem">
-              <CardPlaceholder card={card} />
-            </div>
+          {FEATURED_CARDS.map((card, i) => (
+            <motion.div
+              key={card.name}
+              role="listitem"
+              variants={fadeInUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={VIEW}
+              transition={{ duration: DURATION, ease: EASE, delay: i * 0.08 }}
+            >
+              <TiltCard
+                imageOnly
+                imageSrc={card.image}
+                fallbackContent={FALLBACK_ART[card.artType]}
+                title={card.name}
+                tier={card.tier}
+                archetype={card.archetype}
+                mechanic={card.mechanic}
+                flavor={card.flavor}
+              />
+            </motion.div>
           ))}
         </motion.div>
 
