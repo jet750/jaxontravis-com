@@ -1,5 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Resend } from 'resend';
+import rubric from './rubric.js';
+
+// Cold-start verification only — not yet wired into the scoring call.
+// Confirms rubric.js resolves and logs its top-level keys to Vercel function logs.
+console.log('[send-transcript] rubric loaded, keys:', Object.keys(rubric));
 
 function extractText(content) {
   if (typeof content === 'string') return content;
