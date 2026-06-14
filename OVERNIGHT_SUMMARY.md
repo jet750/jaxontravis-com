@@ -35,8 +35,8 @@ All six tasks completed. `npm run build` passes with zero errors. **Nothing comm
 | `interview_gate_completed` | AIInterview.jsx `handleGateSubmit`, after validation passes | `hasJobDescription` |
 | `jd_fetch_submitted` | AIInterview.jsx `handleFetchJD`, on resolve | `outcome: success\|error` |
 | `chat_message_sent` | AIInterview.jsx `handleChatSubmit` | `turn` (user-message count) |
-| `transcript_email` | AIInterview.jsx `sendTranscript` | `trigger: manual\|auto` (auto = 10-min idle timer; the page-exit beacon is not tracked — analytics can't reliably flush during unload) |
-| `work_samples_gate` | WorkSamples.jsx `handleGateSubmit` | `outcome: granted\|denied\|error` |
+| `transcript_sent` | AIInterview.jsx `sendTranscript` | `trigger: manual\|auto` (auto = 10-min idle timer; the page-exit beacon is not tracked — analytics can't reliably flush during unload) |
+| `work_samples_gate_completed` | WorkSamples.jsx `handleGateSubmit` | `outcome: granted\|denied\|error` |
 
 **What I need from you:**
 - Vercel Analytics: enable Analytics on the Vercel project (dashboard toggle). Note: *custom events* require the Pro plan; page views work on Hobby. Calls are harmless no-ops otherwise.

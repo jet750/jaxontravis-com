@@ -70,14 +70,14 @@ export default function WorkSamples() {
       if (res.ok && data.ok) {
         try { sessionStorage.setItem(ACCESS_KEY, 'granted'); } catch { /* non-fatal */ }
         setUnlocked(true);
-        trackEvent('work_samples_gate', { outcome: 'granted' });
+        trackEvent('work_samples_gate_completed', { outcome: 'granted' });
       } else {
         setServerError(data.error || 'Something went wrong — please try again.');
-        trackEvent('work_samples_gate', { outcome: 'denied' });
+        trackEvent('work_samples_gate_completed', { outcome: 'denied' });
       }
     } catch {
       setServerError('Could not reach the server — please try again.');
-      trackEvent('work_samples_gate', { outcome: 'error' });
+      trackEvent('work_samples_gate_completed', { outcome: 'error' });
     }
     setVerifying(false);
   }

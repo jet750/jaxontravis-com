@@ -92,7 +92,7 @@ export default function AIInterview() {
     // Auto-trigger: skip silently if a transcript already went out
     if (isAutomatic && transcriptSentRef.current) return;
 
-    trackEvent('transcript_email', { trigger: isAutomatic ? 'auto' : 'manual' });
+    trackEvent('transcript_sent', { trigger: isAutomatic ? 'auto' : 'manual' });
 
     setEmailStatus('sending');
     try {

@@ -89,15 +89,18 @@ export function initClarity() {
  * Never throws; analytics must never break the UI.
  *
  * Events used across the site:
- *   interview_gate_completed   — AI Interview gate form passed validation/submitted
- *   jd_fetch_submitted         — JD URL "Fetch" clicked        { outcome: 'success'|'error' }
- *   chat_message_sent          — recruiter chat turn            { turn: number }
- *   transcript_email           — transcript send triggered      { trigger: 'manual'|'auto' }
- *   work_samples_gate          — Work Samples gate attempt      { outcome: 'granted'|'denied'|'error' }
+ *   interview_gate_completed     — AI Interview gate form passed validation/submitted
+ *   jd_fetch_submitted           — JD URL "Fetch" clicked        { outcome: 'success'|'error' }
+ *   chat_message_sent            — recruiter chat turn            { turn: number }
+ *   transcript_sent              — transcript send triggered     { trigger: 'manual'|'auto' }
+ *   work_samples_gate_completed  — Work Samples gate attempt      { outcome: 'granted'|'denied'|'error' }
  */
 export function trackEvent(name, props = {}) {
   try { track(name, props); } catch { /* no-op */ }
   if (posthogReady) {
     try { posthog.capture(name, props); } catch { /* no-op */ }
+  }
+  if (typeof window.gtag === 'function') {
+    try { window.gtag('event', name, props ?? {}); } catch { /* no-op */ }
   }
 }
