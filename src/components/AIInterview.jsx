@@ -7,6 +7,13 @@ import { trackEvent } from '../lib/analytics';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const OPENER   = { role: 'user', content: 'Please begin.' };
 
+const STARTER_PROMPTS = [
+  'What makes you the right hire for a zero-to-one role?',
+  'Tell me about a system you built from scratch.',
+  'How do you work across teams and up to the executive level?',
+  'What are you building outside of work?',
+];
+
 const PREVIEW_MESSAGES = [
   {
     role: 'assistant',
@@ -44,6 +51,8 @@ export default function AIInterview() {
   const [isStreaming,    setIsStreaming]     = useState(false);
   const [transcriptSent, setTranscriptSent] = useState(false);
   const [emailStatus,    setEmailStatus]    = useState('idle'); // 'idle'|'sending'|'sent'|'error'
+  const [ccEmail,        setCcEmail]        = useState('');     // optional extra recipient for manual send
+  const [ccError,        setCcError]        = useState(false);
 
   const messagesEndRef    = useRef(null);
   const chatInputRef      = useRef(null);
@@ -113,13 +122,16 @@ export default function AIInterview() {
   // Keep payload ref current so the idle timer and beacon always have the latest messages
   useEffect(() => {
     if (!chatOpen || !hasRealUserMsg) return;
+    const trimmedCc = ccEmail.trim();
     latestPayloadRef.current = {
       messages,
       recipientEmail: email,
+      // Only forward a CC that's actually a valid address; otherwise omit it
+      cc:             trimmedCc && EMAIL_RE.test(trimmedCc) ? trimmedCc : undefined,
       companyName:    company  || undefined,
       jobDescription: jobText  || undefined,
     };
-  }, [chatOpen, hasRealUserMsg, messages, email, company, jobText]);
+  }, [chatOpen, hasRealUserMsg, messages, email, company, jobText, ccEmail]);
 
   // 10-minute idle timer — resets on every new message, cancels once transcript is sent
   useEffect(() => {
@@ -266,9 +278,9 @@ export default function AIInterview() {
   }
 
   // ── Chat submit ────────────────────────────────────
-  async function handleChatSubmit(e) {
-    e.preventDefault();
-    const text = chatInput.trim();
+  // Single send path used by the input form and the starter chips alike.
+  async function sendMessage(raw) {
+    const text = raw.trim();
     if (!text || isStreaming) return;
     setChatInput('');
 
@@ -287,6 +299,28 @@ export default function AIInterview() {
       ...nextDisplay.filter(m => m.content.trim()),
     ];
     await streamChat(apiMessages);
+  }
+
+  async function handleChatSubmit(e) {
+    e.preventDefault();
+    await sendMessage(chatInput);
+  }
+
+  // Manual "Email this conversation" — validate the optional CC before sending.
+  // A blank CC is fine; a non-empty-but-invalid one blocks the send so the user can fix it.
+  function handleManualSend() {
+    const trimmedCc = ccEmail.trim();
+    if (trimmedCc && !EMAIL_RE.test(trimmedCc)) {
+      setCcError(true);
+      return;
+    }
+    setCcError(false);
+    doSend(false);
+  }
+
+  // Starter chip: submit straight through the shared send path
+  function handleChipClick(prompt) {
+    sendMessage(prompt);
   }
 
   // ── Validation flags ───────────────────────────────
@@ -335,6 +369,29 @@ export default function AIInterview() {
                   </p>
                 </div>
               ))}
+
+              {!hasRealUserMsg && (
+                <div className={styles.idleState}>
+                  <p className={styles.idleCopy}>
+                    I've been trained on Jaxon's full background — ask me anything
+                    you'd ask him in a screening call.
+                  </p>
+                  <div className={styles.chipRow}>
+                    {STARTER_PROMPTS.map(prompt => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        className={styles.chip}
+                        onClick={() => handleChipClick(prompt)}
+                        disabled={isStreaming}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -369,13 +426,33 @@ export default function AIInterview() {
 
           {hasRealUserMsg && (
             <div className={styles.transcriptBar}>
+              <div className={styles.ccField}>
+                <label className={styles.ccLabel} htmlFor="int-cc">
+                  CC another email <span className={styles.optional}>(optional)</span>
+                </label>
+                <input
+                  id="int-cc"
+                  type="email"
+                  className={`${styles.input} ${ccError ? styles.inputErr : ''}`}
+                  value={ccEmail}
+                  onChange={e => { setCcEmail(e.target.value); if (ccError) setCcError(false); }}
+                  placeholder="colleague@company.com"
+                  autoComplete="email"
+                  aria-describedby={ccError ? 'err-cc' : undefined}
+                />
+                {ccError && (
+                  <p id="err-cc" className={styles.errMsg} role="alert">
+                    Enter a valid email or leave it blank
+                  </p>
+                )}
+              </div>
               <motion.button
                 type="button"
                 className={`${styles.emailBtn}${
                   emailStatus === 'sent'  ? ` ${styles.emailBtnSent}`  :
                   emailStatus === 'error' ? ` ${styles.emailBtnError}` : ''
                 }`}
-                onClick={doSend}
+                onClick={handleManualSend}
                 disabled={emailStatus === 'sending'}
                 whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
                 whileTap={{ scale: 0.98, transition: { duration: 0.15 } }}
@@ -387,8 +464,9 @@ export default function AIInterview() {
                  :                           'Email this conversation'}
               </motion.button>
               <p className={styles.emailCaption}>
-                This conversation auto-sends a summary after 10 minutes of inactivity or when
-                you leave. If you've already received one, exporting again sends an updated copy.
+                A copy always goes to the email you entered. Add a CC above to send it to one
+                more person too. This conversation also auto-sends a summary after 10 minutes of
+                inactivity or when you leave; exporting again sends an updated copy.
               </p>
             </div>
           )}

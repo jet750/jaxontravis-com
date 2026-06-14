@@ -19,8 +19,9 @@ export default async function handler(req, res) {
       : 'Unknown';
 
     await resend.emails.send({
-      from: 'AI Interview <notifications@mail.jaxontravis.com>',
+      from: 'Jaxon Travis AI Interview <notifications@mail.jaxontravis.com>',
       to: 'jaxontravis7@gmail.com',
+      replyTo: 'jaxontravis7@gmail.com',
       subject: `New AI Interview Session — ${company || 'Unknown Company'}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; color: #222;">

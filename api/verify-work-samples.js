@@ -49,8 +49,9 @@ export default async function handler(req, res) {
     const safeEmail = escapeHtml(email);
 
     await resend.emails.send({
-      from: 'AI Interview <notifications@mail.jaxontravis.com>',
+      from: 'Jaxon Travis AI Interview <notifications@mail.jaxontravis.com>',
       to: 'jaxontravis7@gmail.com',
+      replyTo: 'jaxontravis7@gmail.com',
       subject: `Work Samples Access — ${name}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; color: #222;">

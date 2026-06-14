@@ -42,7 +42,18 @@ function buildTranscriptHtml(messages) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { messages, recipientEmail, companyName, jobDescription } = req.body ?? {};
+  const { messages, recipientEmail, cc, companyName, jobDescription } = req.body ?? {};
+
+  // Optional CC — accept a single address or an array; ignore anything malformed.
+  // Dedupe against the primary recipients (below) so we never list the same
+  // address in both `to` and `cc`, which Resend rejects as a duplicate recipient.
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const toList = [recipientEmail, 'jaxontravis7@gmail.com'];
+  const toLower = new Set(toList.map(addr => String(addr).trim().toLowerCase()));
+  const ccList = (Array.isArray(cc) ? cc : [cc])
+    .filter(addr => typeof addr === 'string' && EMAIL_RE.test(addr.trim()))
+    .map(addr => addr.trim())
+    .filter(addr => !toLower.has(addr.toLowerCase()));
 
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages must be a non-empty array' });
@@ -142,8 +153,10 @@ export default async function handler(req, res) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const result = await resend.emails.send({
-      from: 'AI Interview <notifications@mail.jaxontravis.com>',
-      to: [recipientEmail, 'jaxontravis7@gmail.com'],
+      from: 'Jaxon Travis AI Interview <notifications@mail.jaxontravis.com>',
+      to: toList,
+      ...(ccList.length ? { cc: ccList } : {}),
+      replyTo: 'jaxontravis7@gmail.com',
       subject,
       html: emailHtml,
     });

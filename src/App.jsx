@@ -1,16 +1,19 @@
+import { lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { MotionConfig } from 'framer-motion';
 import { initAnalytics, initGA4, initClarity } from './lib/analytics';
 import { DURATION, EASE } from './lib/motion';
 import RootLayout      from './layouts/RootLayout';
-import HomePage        from './pages/HomePage';
-import AIInterviewPage from './pages/AIInterviewPage';
-import PerennialPage   from './pages/PerennialPage';
-import BazaarBlendsPage from './pages/BazaarBlendsPage';
-import AboutPage       from './pages/AboutPage';
-import WorkSamplesPage from './pages/WorkSamplesPage';
-import NotFoundPage    from './pages/NotFoundPage';
+import HomePage        from './pages/HomePage';     // eager — primary entry / LCP
+import NotFoundPage    from './pages/NotFoundPage'; // eager — tiny, sits outside the layout
+
+// Secondary routes are split into their own chunks, fetched on navigation.
+const AIInterviewPage  = lazy(() => import('./pages/AIInterviewPage'));
+const PerennialPage    = lazy(() => import('./pages/PerennialPage'));
+const BazaarBlendsPage = lazy(() => import('./pages/BazaarBlendsPage'));
+const AboutPage        = lazy(() => import('./pages/AboutPage'));
+const WorkSamplesPage  = lazy(() => import('./pages/WorkSamplesPage'));
 
 initAnalytics();
 initGA4();

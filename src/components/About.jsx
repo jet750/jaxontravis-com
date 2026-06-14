@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { fadeInUp, DURATION, EASE } from '../lib/motion';
+import { useParallax } from '../hooks/useParallax';
 import { trackEvent } from '../lib/analytics';
 import headshotSrc from '../assets/about/headshot.jpg';
 import resumePdf from '../assets/about/resume.pdf';
@@ -99,6 +100,8 @@ function IconPin() {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function About() {
+  const { ref: photoRef, style: photoParallax } = useParallax({ scale: 1.25, range: 10 });
+
   return (
     <section id="about" className={styles.section} data-accent="cerulean">
       <div className={styles.container}>
@@ -115,22 +118,17 @@ export default function About() {
           <h2 className={styles.heading}>The Through-Line</h2>
         </motion.header>
 
-        {/* ── Block 2: Bio — delay 0.1s ── */}
-        <motion.div
-          className={styles.bioBlock}
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={VIEW}
-          transition={{ duration: DURATION, ease: EASE, delay: 0.1 }}
-        >
+        {/* ── Block 2: Bio — photo loads immediately (parallax only); text fades in ── */}
+        {/* bioBlock is the non-sticky scroll target so the sticky photo can parallax. */}
+        <div className={styles.bioBlock} ref={photoRef}>
           {/* Left: photo + location */}
           <div className={styles.photoWrap}>
             <div className={styles.photoPlaceholder}>
-              <img
+              <motion.img
                 src={headshotSrc}
                 alt="Jaxon Travis"
                 className={styles.headshot}
+                style={photoParallax}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.nextElementSibling.style.display = 'flex';
@@ -149,7 +147,14 @@ export default function About() {
           </div>
 
           {/* Right: bio + role chips */}
-          <div className={styles.textSide}>
+          <motion.div
+            className={styles.textSide}
+            variants={fadeInUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={VIEW}
+            transition={{ duration: DURATION, ease: EASE, delay: 0.1 }}
+          >
             <div className={styles.bio}>
               <p className={styles.bioPara}>
                 Every role in Jaxon's career has followed the same underlying pattern: arriving
@@ -177,8 +182,8 @@ export default function About() {
                 ))}
               </ul>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* ── Block 3: Skills — delay 0.2s ── */}
         <motion.div

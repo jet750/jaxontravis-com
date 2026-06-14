@@ -412,6 +412,57 @@
   border-radius: var(--radius-pill);
 }
 
+/* ─── Idle state + starter chips (pre-first-message) ─── */
+.idleState {
+  margin-top:     auto;   /* push toward the input, below the AI opener */
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-md);
+  padding:        var(--space-md) var(--space-sm) var(--space-xs);
+}
+
+.idleCopy {
+  margin:      0;
+  max-width:   460px;
+  text-align:  center;
+  font-family: var(--font-sans);
+  font-size:   var(--text-body);
+  line-height: var(--leading-body);
+  color:       var(--color-silver);
+  opacity:     0.7;
+}
+
+.chipRow {
+  display:         flex;
+  flex-wrap:       wrap;
+  justify-content: center;
+  gap:             var(--space-xs);
+}
+
+.chip {
+  padding:       var(--space-2xs) var(--space-sm);
+  min-height:    36px;
+  background:    transparent;
+  border:        1px solid rgba(212, 168, 63, 0.3);
+  border-radius: var(--radius-pill);
+  font-family:   var(--font-mono);
+  font-size:     var(--text-eyebrow);
+  color:         rgba(212, 168, 63, 0.7);
+  cursor:        pointer;
+  transition:    border-color 0.2s ease, color 0.2s ease;
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--accent-gold);
+  color:        var(--accent-gold);
+}
+
+.chip:disabled {
+  opacity: 0.4;
+  cursor:  not-allowed;
+}
+
 /* ─── Input bar ─── */
 .inputBar {
   display:      flex;
@@ -558,6 +609,10 @@
     align-items: stretch;
   }
 
+  .ccField {
+    max-width: none;
+  }
+
   .emailBtn {
     width: 100%;
     text-align: center;
@@ -590,6 +645,21 @@
   flex-direction: column;
   align-items: flex-end;
   gap:        var(--space-2xs);
+}
+
+.ccField {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2xs);
+  width:          100%;
+  max-width:      380px;
+  margin-bottom:  var(--space-2xs);
+}
+
+.ccLabel {
+  font-family: var(--font-sans);
+  font-size:   var(--text-micro);
+  color:       var(--color-dust);
 }
 
 .emailBtn {

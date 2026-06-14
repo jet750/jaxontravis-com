@@ -91,6 +91,7 @@
   object-fit:      cover;
   object-position: center top;
   z-index:         0;
+  will-change:     transform;
 }
 
 .initials {

@@ -2,17 +2,21 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { fadeInUp, DURATION, EASE } from '../lib/motion';
+import { useParallax } from '../hooks/useParallax';
 import headshotSrc from '../assets/about/headshot.jpg';
 import styles from './AboutPreview.module.css';
 
 function Headshot() {
+  const { ref: frameRef, style: parallaxStyle } = useParallax();
+
   return (
     <div className={styles.photoWrap}>
-      <div className={styles.photoFrame}>
-        <img
+      <div className={styles.photoFrame} ref={frameRef}>
+        <motion.img
           src={headshotSrc}
           alt="Jaxon Travis"
           className={styles.headshot}
+          style={parallaxStyle}
           onError={(e) => {
             e.currentTarget.style.display = 'none';
             e.currentTarget.nextElementSibling.style.display = 'flex';
