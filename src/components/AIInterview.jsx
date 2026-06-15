@@ -33,6 +33,34 @@ const PREVIEW_MESSAGES = [
   },
 ];
 
+function renderMarkdown(text) {
+  if (!text) return '';
+
+  // Escape raw HTML before applying markdown transforms
+  // Prevents XSS via model-echoed recruiter input
+  text = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  return text
+    // Bold: **text** or __text__
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.*?)__/g, '<strong>$1</strong>')
+    // Italic: *text* or _text_ (single, not double)
+    .replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+    .replace(/(?<!_)_(?!_)(.*?)(?<!_)_(?!_)/g, '<em>$1</em>')
+    // Inline code: `code`
+    .replace(/`([^`]+)`/g,
+      '<code style="background:rgba(255,255,255,0.08);' +
+      'padding:2px 6px;border-radius:3px;font-family:' +
+      'var(--font-mono);font-size:0.9em;">$1</code>')
+    // Line breaks: double newline → paragraph break,
+    // single newline → <br>
+    .replace(/\n\n/g, '</p><p style="margin:0 0 8px;">')
+    .replace(/\n/g, '<br>');
+}
+
 export default function AIInterview() {
   // ── Gate form ──────────────────────────────────────
   const [name,            setName]           = useState('');
@@ -499,12 +527,24 @@ export default function AIInterview() {
                   {msg.role === 'assistant' && (
                     <span className={styles.bubbleLabel}>Jaxon AI</span>
                   )}
-                  <p className={styles.bubbleText}>
-                    {msg.content ||
-                      (isStreaming && i === messages.length - 1
-                        ? <span className={styles.cursor} aria-label="Generating" />
-                        : null)}
-                  </p>
+                  {msg.role === 'assistant' ? (
+                    msg.content ? (
+                      <p
+                        className={styles.bubbleText}
+                        dangerouslySetInnerHTML={{
+                          __html: renderMarkdown(msg.content),
+                        }}
+                      />
+                    ) : (
+                      <p className={styles.bubbleText}>
+                        {isStreaming && i === messages.length - 1 ? (
+                          <span className={styles.cursor} aria-label="Generating" />
+                        ) : null}
+                      </p>
+                    )
+                  ) : (
+                    <p className={styles.bubbleText}>{msg.content}</p>
+                  )}
                 </div>
               ))}
 
