@@ -12,7 +12,7 @@ const CHAT_PREVIEW = [
   },
   {
     role: 'assistant',
-    text: "He's built from scratch three times: Salesforce at Springbig, Zoho at NACB, and Membrain at HŪMNZ — each from first principles including pipeline architecture, stage logic, and workflow automation.",
+    text: "He's built from scratch two times: Zoho at NACB, and Membrain at HŪMNZ — each from first principles including pipeline architecture, stage logic, and workflow automation.",
   },
 ];
 
