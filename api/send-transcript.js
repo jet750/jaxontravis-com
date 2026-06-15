@@ -47,7 +47,7 @@ function buildTranscriptHtml(messages) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { messages, recipientEmail, cc, companyName, jobDescription } = req.body ?? {};
+  const { messages, recipientEmail, cc, companyName, jobDescription, jdAnalysis } = req.body ?? {};
 
   // Optional CC — accept a single address or an array; ignore anything malformed.
   // Dedupe against the primary recipients (below) so we never list the same
@@ -105,6 +105,227 @@ export default async function handler(req, res) {
     console.error('[send-transcript] Haiku summary failed, sending without it:', err?.message ?? err);
   }
 
+  // Step 2b: Role-fit scoring (best-effort — only runs when a JD was provided).
+  // Mirrors the Step 2 Haiku pattern; failure NEVER blocks the email send.
+  let score = null;
+  let scoreHtml = '';
+
+  if (jobDescription?.trim()) {
+    try {
+      const scoreClient = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        timeout: 20_000,
+      });
+
+      // Build the scoring prompt from the rubric object
+      const dimensionsList = rubric.dimensions
+        .map(d => `- ${d.label} (weight: ${d.weight * 100}%): ${d.description}`)
+        .join('\n');
+
+      const gapsList = rubric.hardGaps.join(', ');
+      const differentiatorsList = rubric.differentiators.join('\n- ');
+
+      const modifiersList = rubric.scoringModifiers
+        .map(m => `IF "${m.condition}": apply ${m.modifier > 0 ? '+' : ''}${m.modifier} modifier`)
+        .join('\n');
+
+      const transcriptText = messages
+        .map(m => `${m.role === 'user' ? 'Recruiter' : "Jaxon's AI"}: ${extractText(m.content)}`)
+        .join('\n\n');
+
+      // Include jdAnalysis structured data if available — gives the scorer
+      // pre-extracted signal without re-parsing the raw JD text.
+      const jdAnalysisBlock = jdAnalysis
+        ? `\nPRE-ANALYZED JD DATA:\n${JSON.stringify(jdAnalysis, null, 2)}`
+        : '';
+
+      const scoringPrompt = `${rubric.systemPromptInstructions}
+
+You are scoring the following job description against Jaxon Travis's background.
+
+SCORING DIMENSIONS AND WEIGHTS:
+${dimensionsList}
+
+KNOWN HARD GAPS (score these dimensions honestly if present in JD):
+${gapsList}
+
+GENUINE DIFFERENTIATORS (weight these positively):
+- ${differentiatorsList}
+
+SCORING MODIFIERS:
+${modifiersList}
+
+APPLICATION THRESHOLD: ${rubric.threshold}/10
+
+JOB DESCRIPTION:
+${jobDescription.slice(0, 2000)}
+${jdAnalysisBlock}
+
+CONVERSATION TRANSCRIPT (shows what the recruiter cared about):
+${transcriptText.slice(0, 1500)}
+
+${rubric.outputFormat.subThresholdFraming}
+
+Return ONLY a valid JSON object with exactly these keys —
+no preamble, no markdown, no backticks:
+{
+  "overallVerdict": "string — one line verdict",
+  "weightedScore": number (e.g. 7.2),
+  "dimensions": [
+    {
+      "label": "string",
+      "weight": number,
+      "score": number,
+      "rationale": "string — 1-2 sentences"
+    }
+  ],
+  "closingParagraph": "string — the closing analysis paragraph",
+  "scoreColor": "string — one of: green (>=8), gold (>=7), amber (6-6.9), red (<6)"
+}`;
+
+      const scoreResponse = await scoreClient.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: scoringPrompt }],
+      });
+
+      const rawScore = scoreResponse.content?.[0]?.text?.trim() ?? '';
+
+      // Strip any accidental markdown fences before parsing
+      const cleanScore = rawScore
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/```\s*$/i, '')
+        .trim();
+
+      score = JSON.parse(cleanScore);
+    } catch (err) {
+      console.error('[send-transcript] Scoring failed, sending without score:',
+        err?.message ?? err);
+      score = null;
+    }
+  }
+
+  // Build the score HTML block (only when scoring succeeded).
+  // NOTE: comp values from the rubric are intentionally never referenced here —
+  // rubric.outputFormat.compNotSurfaced gates them out of public-facing output.
+  if (score) {
+    const colorMap = {
+      green: '#4a9e6b',
+      gold:  '#D4A83F',
+      amber: '#C4714A',
+      red:   '#b94a4a',
+    };
+    const accentColor = colorMap[score.scoreColor] ?? '#D4A83F';
+
+    const dimensionRows = score.dimensions.map(d => `
+      <tr>
+        <td style="padding:8px 12px;font-size:13px;
+          font-family:sans-serif;color:#444;
+          border-bottom:1px solid #eee;">
+          ${escapeHtml(d.label)}
+          <span style="color:#999;font-size:11px;">
+            (${Math.round(d.weight * 100)}%)
+          </span>
+        </td>
+        <td style="padding:8px 12px;font-size:13px;
+          font-family:sans-serif;font-weight:600;
+          color:${accentColor};text-align:center;
+          border-bottom:1px solid #eee;">
+          ${d.score}/10
+        </td>
+        <td style="padding:8px 12px;font-size:12px;
+          font-family:sans-serif;color:#666;
+          border-bottom:1px solid #eee;
+          line-height:1.5;">
+          ${escapeHtml(d.rationale)}
+        </td>
+      </tr>`).join('');
+
+    scoreHtml = `
+      <div style="margin-bottom:32px;">
+
+        <!-- Score header -->
+        <div style="display:flex;align-items:baseline;
+          gap:12px;margin-bottom:4px;">
+          <div style="font-size:11px;font-weight:700;
+            letter-spacing:0.12em;text-transform:uppercase;
+            color:#999;font-family:sans-serif;">
+            Role Fit Score
+          </div>
+        </div>
+
+        <!-- Verdict + score -->
+        <div style="background:#141210;border-radius:10px;
+          padding:20px 24px;margin-bottom:16px;
+          display:flex;align-items:center;
+          justify-content:space-between;">
+          <div>
+            <div style="font-size:13px;color:#aaa;
+              font-family:sans-serif;margin-bottom:4px;">
+              ${escapeHtml(score.overallVerdict)}
+            </div>
+            <div style="font-size:11px;color:#666;
+              font-family:sans-serif;">
+              ${score.weightedScore >= rubric.threshold
+                ? '✓ Above application threshold'
+                : '↗ Below threshold — see analysis below'}
+            </div>
+          </div>
+          <div style="font-size:42px;font-weight:300;
+            color:${accentColor};font-family:Georgia,serif;
+            line-height:1;">
+            ${score.weightedScore.toFixed(1)}
+            <span style="font-size:20px;color:#666;">/10</span>
+          </div>
+        </div>
+
+        <!-- Dimension table -->
+        <table style="width:100%;border-collapse:collapse;
+          margin-bottom:16px;background:#fafaf8;
+          border-radius:8px;overflow:hidden;">
+          <thead>
+            <tr style="background:#f0ede8;">
+              <th style="padding:10px 12px;font-size:11px;
+                font-weight:700;letter-spacing:0.1em;
+                text-transform:uppercase;color:#888;
+                font-family:sans-serif;text-align:left;">
+                Dimension
+              </th>
+              <th style="padding:10px 12px;font-size:11px;
+                font-weight:700;letter-spacing:0.1em;
+                text-transform:uppercase;color:#888;
+                font-family:sans-serif;text-align:center;
+                width:80px;">
+                Score
+              </th>
+              <th style="padding:10px 12px;font-size:11px;
+                font-weight:700;letter-spacing:0.1em;
+                text-transform:uppercase;color:#888;
+                font-family:sans-serif;text-align:left;">
+                Rationale
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dimensionRows}
+          </tbody>
+        </table>
+
+        <!-- Closing paragraph -->
+        <div style="font-size:14px;line-height:1.75;
+          color:#444;font-family:sans-serif;
+          padding:0 4px;">
+          ${escapeHtml(score.closingParagraph)
+            .replace(/\\n/g, '<br>')}
+        </div>
+
+      </div>
+
+      <hr style="border:none;border-top:1px solid #e0dbd4;
+        margin-bottom:32px;" />`;
+  }
+
   // Step 3 & 4: Build email HTML
   const transcriptHtml = buildTranscriptHtml(messages);
 
@@ -126,6 +347,8 @@ export default async function handler(req, res) {
   <hr style="border:none;border-top:1px solid #e0dbd4;margin-bottom:32px;" />
 
   ${summarySection}
+
+  ${scoreHtml}
 
   <div style="background:#141210;border-radius:10px;padding:24px 28px;margin-bottom:36px;">
     <p style="margin:0 0 12px;color:#D4A83F;font-size:12px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;font-family:sans-serif;">Continue the conversation</p>
