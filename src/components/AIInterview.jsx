@@ -273,6 +273,9 @@ export default function AIInterview() {
     }).catch(() => {});
 
     setChatOpen(true);
+    // Mark interview engagement so the returning-visitor nudge stops firing in
+    // future sessions. Wrapped per the storage guardrail (Safari private mode).
+    try { localStorage.setItem('jt_interview_started', 'true'); } catch { /* no-op */ }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     await streamChat([OPENER]);
   }

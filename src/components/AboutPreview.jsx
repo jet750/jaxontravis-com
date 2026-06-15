@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { fadeInUp, DURATION, EASE } from '../lib/motion';
 import { useParallax } from '../hooks/useParallax';
+import { useRecruiterDetection } from '../hooks/useRecruiterDetection';
 import headshotSrc from '../assets/about/headshot.jpg';
 import styles from './AboutPreview.module.css';
 
@@ -33,6 +34,21 @@ function Headshot() {
 export default function AboutPreview() {
   const navigate = useNavigate();
   const sectionRef = useRef(null);
+
+  // Dwell detection: reuse the existing sectionRef so 45s of continuous
+  // visibility on the About section trips the recruiter nudge.
+  const shouldNudge = useRecruiterDetection({ sectionRef });
+  useEffect(() => {
+    if (!shouldNudge) return;
+    try {
+      if (sessionStorage.getItem('jt_nudge_dismissed') === 'true') return;
+    } catch { /* no-op */ }
+    // Surface the nudge via a custom event so App can render it without
+    // prop-drilling shouldNudge up through HomePage.
+    window.dispatchEvent(
+      new CustomEvent('jt:nudge_trigger', { detail: { signal: 'dwell_time' } }),
+    );
+  }, [shouldNudge]);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
