@@ -4,13 +4,13 @@ import { buildSystemPrompt } from '../src/data/background.js';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { messages, companyName, companyContext, jobDescription } = req.body ?? {};
+  const { messages, companyName, companyContext, jobDescription, jdAnalysis } = req.body ?? {};
 
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages must be a non-empty array' });
   }
 
-  const systemPrompt = buildSystemPrompt(companyName, companyContext, jobDescription);
+  const systemPrompt = buildSystemPrompt(companyName, companyContext, jobDescription, jdAnalysis);
 
   // Guard: if system prompt is empty something is wrong with the import
   if (!systemPrompt || systemPrompt.length < 100) {

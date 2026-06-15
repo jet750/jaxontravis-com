@@ -93,6 +93,7 @@ export function initClarity() {
  *   jd_fetch_submitted           — JD URL "Fetch" clicked        { outcome: 'success'|'error' }
  *   chat_message_sent            — recruiter chat turn            { turn: number }
  *   transcript_sent              — transcript send triggered     { trigger: 'manual'|'auto' }
+ *   voice_mode_activated         — recruiter enabled voice mode
  *   work_samples_gate_completed  — Work Samples gate attempt      { outcome: 'granted'|'denied'|'error' }
  */
 export function trackEvent(name, props = {}) {

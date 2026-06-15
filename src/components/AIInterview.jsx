@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import styles from './AIInterview.module.css';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+import { useVoiceMode } from '../hooks/useVoiceMode';
+import VoiceModeUI from './VoiceModeUI';
 import { trackEvent } from '../lib/analytics';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,6 +46,11 @@ export default function AIInterview() {
   const [fetchStatus, setFetchStatus] = useState('idle'); // idle|fetching|done|error
   const [showPaste,   setShowPaste]   = useState(false);
 
+  // ── JD pre-analysis (personalization layer) ────────
+  const [jdAnalysis,     setJdAnalysis]     = useState(null);
+  const [analysisStatus, setAnalysisStatus] = useState('idle'); // idle|analyzing|done|error
+  const lastAnalyzedRef  = useRef('');                           // dedupe: last JD text we analyzed
+
   // ── Chat ───────────────────────────────────────────
   const [chatOpen,       setChatOpen]       = useState(false);
   const [messages,       setMessages]       = useState([]);
@@ -54,15 +61,65 @@ export default function AIInterview() {
   const [ccEmail,        setCcEmail]        = useState('');     // optional extra recipient for manual send
   const [ccError,        setCcError]        = useState(false);
 
+  // ── Voice mode (additive layer over the text chat) ─
+  const [voiceModeActive,    setVoiceModeActive]    = useState(false);
+  const [lastAIMessage,      setLastAIMessage]      = useState('');
+  const [lastAIMessageShort, setLastAIMessageShort] = useState('');
+
   const messagesEndRef    = useRef(null);
   const chatInputRef      = useRef(null);
   const idleTimerRef      = useRef(null);
   const transcriptSentRef = useRef(false); // mirrors transcriptSent for non-reactive contexts
   const latestPayloadRef  = useRef(null);  // always holds the most recent sendable payload
+  // Mirrors for the streaming completion path (streamChat reads these without
+  // having to take voiceModeActive / speakText as reactive deps).
+  const voiceModeActiveRef = useRef(false);
+  const speakTextRef       = useRef(null);
 
   // Scroll-reveal — shared ref works across gate↔chat view transitions
   // because revealed stays true once set (re-render keeps the truthy state)
   const [containerRef, revealed] = useScrollReveal();
+
+  // ── Voice mode hook ─────────────────────────────────
+  // Voice input flows through the SAME sendMessage path as typed input, so it
+  // appears in the transcript as a normal user message with no extra handling.
+  const {
+    isListening,
+    isSpeaking,
+    voiceSupported,
+    transcript,
+    startListening,
+    stopSpeaking,
+    speakText,
+    toggleVoiceMode: toggleVoiceHook,
+  } = useVoiceMode({
+    onTranscriptComplete: (text) => {
+      if (text.trim()) sendMessage(text.trim());
+    },
+  });
+
+  const handleToggleVoiceMode = () => {
+    const enabling = !voiceModeActive;
+    setVoiceModeActive(enabling);
+    toggleVoiceHook(); // keep the hook's session state in sync for full teardown
+    if (enabling) {
+      trackEvent('voice_mode_activated', {});
+    } else {
+      stopSpeaking(); // leaving voice mode silences any in-progress TTS
+    }
+  };
+
+  const handleHearFullResponse = () => {
+    if (lastAIMessage) {
+      stopSpeaking();
+      speakText(lastAIMessage, lastAIMessage);
+    }
+  };
+
+  // Keep refs current so streamChat's completion path sees the latest values
+  // without re-creating the streaming callback.
+  useEffect(() => { voiceModeActiveRef.current = voiceModeActive; }, [voiceModeActive]);
+  useEffect(() => { speakTextRef.current = speakText; }, [speakText]);
 
   // OPENER is never pushed into the messages display array, so any role:'user'
   // entry here is a real recruiter question — safe to use as the gating condition.
@@ -164,6 +221,8 @@ export default function AIInterview() {
   const streamChat = useCallback(async (apiMessages) => {
     setIsStreaming(true);
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    // Accumulate the full assistant reply for the voice-mode auto-read (below).
+    let fullResponseText = '';
 
     try {
       const res = await fetch('/api/chat', {
@@ -174,6 +233,9 @@ export default function AIInterview() {
           companyName:     company  || null,
           companyContext:  null,
           jobDescription:  jobText  || null,
+          // Additive: null when analysis hasn't finished (or failed) — the
+          // backend prompt builder treats null as "no personalization".
+          jdAnalysis:      jdAnalysis ?? null,
         }),
       });
 
@@ -198,6 +260,7 @@ export default function AIInterview() {
             const { text, error } = JSON.parse(raw);
             if (error) throw new Error(error);
             if (text) {
+              fullResponseText += text;
               setMessages(prev => {
                 const next = [...prev];
                 next[next.length - 1] = {
@@ -222,7 +285,57 @@ export default function AIInterview() {
     }
 
     setIsStreaming(false);
-  }, [company, jobText]); // captured at gate-submit time; stable after that
+
+    // ── Voice mode: auto-read a short version once the reply is complete ──
+    // Reads refs so this stays out of the callback's dep array. fullResponseText
+    // is empty on an early error, so the error message is never spoken.
+    if (voiceModeActiveRef.current && fullResponseText) {
+      const sentences = fullResponseText.match(/[^.!?]+[.!?]+/g) || [];
+      const shortVersion =
+        sentences.slice(0, 3).join(' ').trim() || fullResponseText.slice(0, 280);
+
+      setLastAIMessage(fullResponseText);
+      setLastAIMessageShort(shortVersion);
+      speakTextRef.current?.(fullResponseText, shortVersion);
+    }
+  }, [company, jobText, jdAnalysis]); // jdAnalysis added so the latest analysis (or null) is always sent
+
+  // ── JD pre-analysis ────────────────────────────────
+  // Fire-and-forget Haiku call that extracts structured role data so the
+  // interview can be personalized. Captures `company` via useCallback dep.
+  const analyzeJD = useCallback(async function analyzeJD(text) {
+    setAnalysisStatus('analyzing');
+    try {
+      const res = await fetch('/api/analyze-jd', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ jobDescription: text, companyName: company }),
+      });
+      const data = await res.json();
+      setJdAnalysis(data);
+      setAnalysisStatus('done');
+    } catch {
+      // Fail silent — the interview still works without personalization.
+      setAnalysisStatus('error');
+    }
+  }, [company]);
+
+  // Trigger analysis once JD text has settled — from a successful URL fetch
+  // ('done') or a manual paste. Debounced so typing/pasting settles before we
+  // spend a Haiku call; deduped via lastAnalyzedRef so the same text isn't
+  // re-analyzed if the effect re-runs.
+  useEffect(() => {
+    const text = jobText.trim();
+    if (!text || fetchStatus === 'fetching') return;
+    if (lastAnalyzedRef.current === text)      return;
+
+    const delay = fetchStatus === 'done' ? 0 : 700;
+    const timer = setTimeout(() => {
+      lastAnalyzedRef.current = text;
+      analyzeJD(text);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [jobText, fetchStatus, analyzeJD]);
 
   // ── JD URL fetch ───────────────────────────────────
   async function handleFetchJD() {
@@ -338,13 +451,35 @@ export default function AIInterview() {
     return (
       <section id="ai-interview" className={styles.section} data-accent="gold">
         <div className={styles.container} ref={containerRef} data-reveal={revealed ? 'true' : 'false'}>
-          <header className={styles.sectionTop}>
+          <header className={styles.sectionTop} style={{ position: 'relative' }}>
             <span className={styles.eyebrow}>PROFESSIONAL</span>
             <h2 className={styles.heading}>Interview Me Before You Hire Me</h2>
             <p className={styles.chatMeta}>
               Session for <strong>{company}</strong>
               {jobText && <span className={styles.jdBadge}>· JD loaded</span>}
             </p>
+            {voiceSupported !== false && (
+              <button
+                type="button"
+                onClick={handleToggleVoiceMode}
+                style={{
+                  position:      'absolute',
+                  top:           0,
+                  right:         0,
+                  background:    'transparent',
+                  border:        `1px solid rgba(212,168,63,${voiceModeActive ? 0.9 : 0.4})`,
+                  color:         'var(--accent-gold)',
+                  borderRadius:  '20px',
+                  padding:       '4px 10px',
+                  fontSize:      '11px',
+                  letterSpacing: '0.08em',
+                  cursor:        'pointer',
+                  fontFamily:    'var(--font-sans)',
+                }}
+              >
+                {voiceModeActive ? '✕ Voice' : '🎙 Voice'}
+              </button>
+            )}
           </header>
 
           <div className={styles.chatShell}>
@@ -398,6 +533,19 @@ export default function AIInterview() {
               <div ref={messagesEndRef} />
             </div>
 
+            {voiceModeActive ? (
+              <VoiceModeUI
+                isListening={isListening}
+                isSpeaking={isSpeaking}
+                voiceSupported={voiceSupported}
+                transcript={transcript}
+                isStreaming={isStreaming}
+                onStartListening={startListening}
+                onStopSpeaking={stopSpeaking}
+                onHearFullResponse={handleHearFullResponse}
+                hasLastResponse={Boolean(lastAIMessageShort)}
+              />
+            ) : (
             <form onSubmit={handleChatSubmit} className={styles.inputBar}>
               <input
                 ref={chatInputRef}
@@ -425,6 +573,7 @@ export default function AIInterview() {
                 {isStreaming ? '…' : 'Send →'}
               </motion.button>
             </form>
+            )}
           </div>
 
           {hasRealUserMsg && (
@@ -654,6 +803,31 @@ export default function AIInterview() {
                       ← Use URL instead
                     </motion.button>
                   </div>
+                )}
+
+                {/* JD pre-analysis status — inline, never blocks any control.
+                    'error' renders nothing (fail silent). */}
+                {analysisStatus === 'analyzing' && (
+                  <p style={{
+                    fontFamily: 'var(--font-sans)',
+                    fontSize:   '11px',
+                    color:      'var(--accent-gold)',
+                    opacity:    0.6,
+                    marginTop:  'var(--space-xs)',
+                  }}>
+                    Analyzing role fit…
+                  </p>
+                )}
+                {analysisStatus === 'done' && (
+                  <p style={{
+                    fontFamily: 'var(--font-sans)',
+                    fontSize:   '11px',
+                    color:      'var(--accent-gold)',
+                    opacity:    0.8,
+                    marginTop:  'var(--space-xs)',
+                  }}>
+                    Role analyzed — interview personalized
+                  </p>
                 )}
               </fieldset>
 

@@ -6,11 +6,17 @@
     "api/chat.js": {
       "maxDuration": 30
     },
+    "api/analyze-jd.js": {
+      "maxDuration": 15
+    },
     "api/fetch-jd.js": {
       "maxDuration": 30
     },
     "api/send-transcript.js": {
       "maxDuration": 30
+    },
+    "api/tts.js": {
+      "maxDuration": 15
     }
   },
   "rewrites": [
