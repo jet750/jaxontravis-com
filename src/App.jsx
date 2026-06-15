@@ -14,6 +14,7 @@ import NotFoundPage    from './pages/NotFoundPage'; // eager — tiny, sits outs
 const AIInterviewPage  = lazy(() => import('./pages/AIInterviewPage'));
 const PerennialPage    = lazy(() => import('./pages/PerennialPage'));
 const BazaarBlendsPage = lazy(() => import('./pages/BazaarBlendsPage'));
+const PhotographyPage  = lazy(() => import('./pages/Photography'));
 const AboutPage        = lazy(() => import('./pages/AboutPage'));
 const WorkSamplesPage  = lazy(() => import('./pages/WorkSamplesPage'));
 
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="/interview"     element={<AIInterviewPage />} />
             <Route path="/perennial"     element={<PerennialPage />} />
             <Route path="/bazaar-blends" element={<BazaarBlendsPage />} />
+            <Route path="/photography"   element={<PhotographyPage />} />
             <Route path="/about"         element={<AboutPage />} />
             <Route path="/work-samples"  element={<WorkSamplesPage />} />
           </Route>

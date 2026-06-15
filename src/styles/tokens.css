@@ -16,24 +16,28 @@
   --accent-botanical:  #8AB87E;
   --accent-ember:      #CE6E44;   /* lifted from #C96B42 — AA 4.5:1 for eyebrow text on --color-charcoal */
   --accent-cerulean:   #6B92BC;
+  --accent-violet:     #9B82C9;   /* JET Photography — cool violet, AA 4.5:1 for eyebrow text on --color-charcoal */
 
   /* ─── Pastel Accent Blends ─── */
   --pastel-gold:       #EDD49A;
   --pastel-botanical:  #B8D5B1;
   --pastel-ember:      #E5B69A;
   --pastel-cerulean:   #ABC4DE;
+  --pastel-violet:     #C9B8E4;
 
   /* ─── Accent Tints — 8% ─── */
   --tint-gold-08:      rgba(212, 168, 63,  0.08);
   --tint-botanical-08: rgba(138, 184, 126, 0.08);
   --tint-ember-08:     rgba(201, 107, 66,  0.08);
   --tint-cerulean-08:  rgba(107, 146, 188, 0.08);
+  --tint-violet-08:    rgba(155, 130, 201, 0.08);
 
   /* ─── Accent Tints — 15% ─── */
   --tint-gold-15:      rgba(212, 168, 63,  0.15);
   --tint-botanical-15: rgba(138, 184, 126, 0.15);
   --tint-ember-15:     rgba(201, 107, 66,  0.15);
   --tint-cerulean-15:  rgba(107, 146, 188, 0.15);
+  --tint-violet-15:    rgba(155, 130, 201, 0.15);
 
   /* ─── Shadows ─── */
   --shadow-sm:  0 1px 3px  rgba(0, 0, 0, 0.5);
@@ -120,4 +124,11 @@
   --current-pastel: var(--pastel-cerulean);
   --current-tint-08: var(--tint-cerulean-08);
   --current-tint-15: var(--tint-cerulean-15);
+}
+
+[data-accent="violet"] {
+  --current-accent: var(--accent-violet);
+  --current-pastel: var(--pastel-violet);
+  --current-tint-08: var(--tint-violet-08);
+  --current-tint-15: var(--tint-violet-15);
 }

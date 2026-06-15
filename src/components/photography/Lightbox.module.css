@@ -1,0 +1,148 @@
+/* ═══════════════════════════════════════════
+   OVERLAY
+═══════════════════════════════════════════ */
+.overlay {
+  position:        fixed;
+  inset:           0;
+  z-index:         200;          /* above nav (100) */
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  padding:         var(--space-xl);
+  background:      rgba(10, 8, 14, 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ═══════════════════════════════════════════
+   STAGE — shrink-wraps the image so the title
+   bar overlays exactly the image's bottom edge
+═══════════════════════════════════════════ */
+.stage {
+  position:  relative;
+  margin:    0;
+  max-width: min(92vw, 1100px);
+  max-height: 84vh;
+  line-height: 0;            /* removes inline gap under the image */
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.image {
+  display:    block;
+  max-width:  min(92vw, 1100px);
+  max-height: 84vh;
+  width:      auto;
+  height:     auto;
+  object-fit: contain;
+}
+
+/* Placeholder rendered at a tall 3:4 stand-in size */
+.placeholderBox {
+  width:        auto;
+  height:       min(84vh, 640px);
+  aspect-ratio: 3 / 4;
+  max-width:    92vw;
+}
+
+/* ─── Title bar — semi-transparent dark, white text ─── */
+.caption {
+  position:        absolute;
+  left:            0;
+  right:           0;
+  bottom:          0;
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--space-md);
+  padding:         var(--space-sm) var(--space-md);
+  line-height:     var(--leading-body);
+  background:      linear-gradient(to top, rgba(10, 8, 14, 0.85), rgba(10, 8, 14, 0));
+}
+
+.captionTitle {
+  font-family:    var(--font-serif);
+  font-size:      var(--text-h4);
+  font-weight:    400;
+  letter-spacing: var(--tracking-tight);
+  color:          #ffffff;
+}
+
+.captionCount {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-small);
+  font-weight:    400;
+  color:          var(--color-silver);
+  white-space:    nowrap;
+  flex-shrink:    0;
+}
+
+/* ═══════════════════════════════════════════
+   CONTROLS
+═══════════════════════════════════════════ */
+.close,
+.arrow {
+  position:        fixed;
+  z-index:         1;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  color:           var(--color-parchment);
+  background:      rgba(20, 18, 16, 0.55);
+  border:          1px solid rgba(245, 239, 230, 0.12);
+  border-radius:   var(--radius-pill);
+  cursor:          pointer;
+  transition:      background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.close:hover,
+.arrow:hover {
+  background:   rgba(155, 130, 201, 0.22);
+  border-color: var(--accent-violet);
+  color:        #ffffff;
+}
+
+.close:focus-visible,
+.arrow:focus-visible {
+  outline:        2px solid var(--accent-violet);
+  outline-offset: 2px;
+}
+
+.close {
+  top:    var(--space-md);
+  right:  var(--space-md);
+  width:  44px;
+  height: 44px;
+}
+
+.arrow {
+  top:       50%;
+  transform: translateY(-50%);
+  width:     48px;
+  height:    48px;
+}
+
+.arrowPrev { left:  var(--space-md); }
+.arrowNext { right: var(--space-md); }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .overlay {
+    padding: var(--space-sm);
+  }
+
+  .arrow {
+    width:  40px;
+    height: 40px;
+  }
+
+  .arrowPrev { left:  var(--space-xs); }
+  .arrowNext { right: var(--space-xs); }
+
+  .captionTitle {
+    font-size: var(--text-body);
+  }
+}

@@ -75,6 +75,7 @@
 .link.active[data-accent="gold"]      { color: var(--accent-gold);      }
 .link.active[data-accent="botanical"] { color: var(--accent-botanical);  }
 .link.active[data-accent="ember"]     { color: var(--accent-ember);      }
+.link.active[data-accent="violet"]    { color: var(--accent-violet);     }
 .link.active[data-accent="cerulean"]  { color: var(--accent-cerulean);   }
 
 /* ─── Colored dot ─── */
@@ -90,6 +91,7 @@
 .link[data-accent="gold"]      .dot { background: var(--accent-gold);      }
 .link[data-accent="botanical"] .dot { background: var(--accent-botanical);  }
 .link[data-accent="ember"]     .dot { background: var(--accent-ember);      }
+.link[data-accent="violet"]    .dot { background: var(--accent-violet);     }
 .link[data-accent="cerulean"]  .dot { background: var(--accent-cerulean);   }
 
 /* Dot opacity: dim when not active, full when active or hovered */
@@ -133,9 +135,13 @@
   background: var(--color-obsidian);
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  gap: var(--space-lg);
+  /* Top padding reserves space for the fixed header so no link can land
+     beneath it (and become unclickable); overflow-y lets the menu scroll
+     instead of clipping its top edge on short screens. */
+  padding-block: var(--space-3xl) var(--space-xl);
+  padding-inline: var(--space-md);
+  overflow-y: auto;
   opacity: 0;
   pointer-events: none;
   /* visibility removes the hidden links from the tab order; the delay
@@ -143,6 +149,12 @@
   visibility: hidden;
   transform: translateY(-8px);
   transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
+}
+
+/* margin-block:auto vertically centres the menu when there's room and
+   yields to scrolling (rather than clipping the top) when there isn't. */
+.overlay nav {
+  margin-block: auto;
 }
 
 .overlayOpen {
@@ -154,10 +166,16 @@
 }
 
 .overlayList {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  justify-content: center;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-md) var(--space-2xl);
+}
+
+/* Left-align each link within its cell so the coloured dots line up. */
+.overlayList > * {
+  justify-self: start;
 }
 
 .overlayLink {
@@ -181,6 +199,7 @@
 .overlayLink.overlayActive[data-accent="gold"]      { color: var(--accent-gold);        }
 .overlayLink.overlayActive[data-accent="botanical"] { color: var(--accent-botanical);   }
 .overlayLink.overlayActive[data-accent="ember"]     { color: var(--accent-ember);       }
+.overlayLink.overlayActive[data-accent="violet"]    { color: var(--accent-violet);      }
 .overlayLink.overlayActive[data-accent="cerulean"]  { color: var(--accent-cerulean);    }
 
 .overlayDot {
@@ -194,6 +213,7 @@
 .overlayLink[data-accent="gold"]      .overlayDot { background: var(--accent-gold);      }
 .overlayLink[data-accent="botanical"] .overlayDot { background: var(--accent-botanical);  }
 .overlayLink[data-accent="ember"]     .overlayDot { background: var(--accent-ember);      }
+.overlayLink[data-accent="violet"]    .overlayDot { background: var(--accent-violet);     }
 .overlayLink[data-accent="cerulean"]  .overlayDot { background: var(--accent-cerulean);   }
 
 /* ─── Responsive ─── */
@@ -209,6 +229,16 @@
 
   .hamburger {
     display: flex;
+  }
+}
+
+/* Very narrow phones: a single column avoids horizontal overflow of the
+   two-column labels. The overlay's overflow-y keeps every link reachable
+   if the list then grows taller than the viewport. */
+@media (max-width: 400px) {
+  .overlayList {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
   }
 }
 

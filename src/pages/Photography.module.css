@@ -1,0 +1,249 @@
+/* ─── Section shell ─── */
+.section {
+  padding: var(--space-5xl) var(--space-xl);
+}
+
+.container {
+  max-width: var(--max-width);
+  margin-inline: auto;
+}
+
+/* ═══════════════════════════════════════════
+   SECTION HEADER
+═══════════════════════════════════════════ */
+.header {
+  margin-bottom: var(--space-3xl);
+}
+
+.eyebrow {
+  display:        inline-block;
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-violet);
+  margin-bottom:  var(--space-sm);
+}
+
+.heading {
+  font-family:    var(--font-serif);
+  font-size:      var(--text-h1);
+  font-weight:    300;
+  letter-spacing: var(--tracking-tight);
+  color:          var(--color-parchment);
+  line-height:    var(--leading-heading);
+  margin:         0;
+}
+
+/* ═══════════════════════════════════════════
+   HERO SPLIT — sticky featured photo + statement
+   (mirrors the About page bio block)
+═══════════════════════════════════════════ */
+.heroBlock {
+  display:               grid;
+  grid-template-columns: minmax(300px, 440px) 1fr;
+  gap:                   var(--space-3xl);
+  margin-bottom:         var(--space-4xl);
+  align-items:           start;
+}
+
+/* ─── Featured photo side ─── */
+.heroPhotoWrap {
+  position: sticky;
+  top:      calc(80px + var(--space-lg));
+}
+
+.heroFrame {
+  position:      relative;
+  width:         100%;
+  aspect-ratio:  3 / 4;
+  overflow:      hidden;
+  border:        1px solid rgba(155, 130, 201, 0.2);
+  border-radius: var(--radius-lg);
+  background:    var(--color-charcoal);
+  box-shadow:    var(--shadow-md);
+}
+
+/* Media wrapper — receives the scroll parallax transform */
+.heroMedia {
+  position:    absolute;
+  inset:       0;
+  width:       100%;
+  height:      100%;
+  will-change: transform;
+}
+
+.heroImg {
+  display:         block;
+  width:           100%;
+  height:          100%;
+  object-fit:      cover;
+  object-position: center;
+}
+
+/* ─── Statement side ─── */
+.statement {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-xl);
+  /* generous min-height so the sticky featured photo has room to "release"
+     after the statement finishes scrolling, matching the About behavior */
+  min-height:     80vh;
+}
+
+.statementEyebrow {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-violet);
+}
+
+.statementPara {
+  font-family: var(--font-sans);
+  font-size:   var(--text-body-xl);
+  font-weight: 300;
+  color:       var(--color-silver);
+  line-height: var(--leading-body);
+  margin:      0;
+}
+
+/* ─── Themes ─── */
+.themesBlock {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-sm);
+}
+
+.themesLabel {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-violet);
+}
+
+.themes {
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        var(--space-xs);
+  list-style: none;
+  padding:    0;
+  margin:     0;
+}
+
+.themeChip {
+  display:       inline-block;
+  padding:       5px var(--space-sm);
+  border-radius: var(--radius-pill);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-small);
+  font-weight:   500;
+  color:         var(--pastel-violet);
+  background:    var(--tint-violet-08);
+  border:        1px solid rgba(155, 130, 201, 0.22);
+  white-space:   nowrap;
+  transition:    background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.themeChip:hover {
+  background:   var(--tint-violet-15);
+  border-color: rgba(155, 130, 201, 0.4);
+  color:        var(--accent-violet);
+}
+
+/* ─── Persistent print-quote button ─── */
+.printBtn {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  align-self:      flex-start;
+  min-height:      44px;
+  padding:         var(--space-xs) var(--space-lg);
+  background:      var(--accent-violet);
+  border-radius:   var(--radius-md);
+  font-family:     var(--font-sans);
+  font-size:       var(--text-body);
+  font-weight:     600;
+  /* dark text on violet — 5.7:1, matches the ember/gold filled-button convention */
+  color:           var(--color-obsidian);
+  text-decoration: none;
+  box-shadow:      var(--shadow-sm);
+  transition:      background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.printBtn:hover {
+  background: var(--pastel-violet);
+  color:      var(--color-obsidian);
+  box-shadow: var(--shadow-md);
+}
+
+/* ═══════════════════════════════════════════
+   GRID HEADER
+═══════════════════════════════════════════ */
+.gridHeader {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2xs);
+  padding-top:    var(--space-3xl);
+  border-top:     1px solid var(--color-ember-edge);
+  margin-bottom:  var(--space-xl);
+}
+
+.gridEyebrow {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-eyebrow);
+  font-weight:    600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color:          var(--accent-violet);
+}
+
+.gridHint {
+  font-family: var(--font-sans);
+  font-size:   var(--text-small);
+  color:       var(--color-dust);
+  margin:      0;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  .heroBlock {
+    grid-template-columns: 280px 1fr;
+    gap:                   var(--space-2xl);
+  }
+}
+
+@media (max-width: 767px) {
+  .section {
+    padding: var(--space-3xl) var(--space-sm);
+  }
+
+  .header {
+    margin-bottom: var(--space-xl);
+  }
+
+  .heroBlock {
+    grid-template-columns: 1fr;
+    gap:                   var(--space-xl);
+    margin-bottom:         var(--space-3xl);
+  }
+
+  .heroPhotoWrap {
+    position: static;
+  }
+
+  .heroFrame {
+    max-width:     320px;
+    margin-inline: auto;
+  }
+
+  .statement {
+    min-height: 0;
+  }
+}

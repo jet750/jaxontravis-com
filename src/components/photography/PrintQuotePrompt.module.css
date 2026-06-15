@@ -1,0 +1,97 @@
+/* ═══════════════════════════════════════════
+   OVERLAY — backdrop blur, sits above lightbox
+═══════════════════════════════════════════ */
+.overlay {
+  position:        fixed;
+  inset:           0;
+  z-index:         300;          /* above lightbox (200) and nav (100) */
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  padding:         var(--space-lg);
+  background:      rgba(10, 8, 14, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ═══════════════════════════════════════════
+   CARD
+═══════════════════════════════════════════ */
+.card {
+  width:          100%;
+  max-width:      440px;
+  padding:        var(--space-xl);
+  background:     var(--color-charcoal);
+  border:         1px solid rgba(155, 130, 201, 0.25);
+  border-radius:  var(--radius-lg);
+  box-shadow:     var(--shadow-lg);
+  text-align:     center;
+}
+
+.title {
+  font-family:    var(--font-serif);
+  font-size:      var(--text-h2);
+  font-weight:    300;
+  letter-spacing: var(--tracking-tight);
+  color:          var(--color-parchment);
+  line-height:    var(--leading-heading);
+  margin:         0 0 var(--space-sm);
+}
+
+.body {
+  font-family: var(--font-sans);
+  font-size:   var(--text-body);
+  font-weight: 300;
+  color:       var(--color-silver);
+  line-height: var(--leading-body);
+  margin:      0 0 var(--space-lg);
+}
+
+/* ═══════════════════════════════════════════
+   ACTIONS
+═══════════════════════════════════════════ */
+.actions {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-sm);
+}
+
+.cta {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  min-height:      44px;
+  padding:         var(--space-xs) var(--space-lg);
+  background:      var(--accent-violet);
+  border-radius:   var(--radius-md);
+  font-family:     var(--font-sans);
+  font-size:       var(--text-body);
+  font-weight:     600;
+  /* dark text on violet — 5.7:1, matches the ember/gold filled-button convention */
+  color:           var(--color-obsidian);
+  text-decoration: none;
+  box-shadow:      var(--shadow-sm);
+  transition:      background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cta:hover {
+  background: var(--pastel-violet);
+  color:      var(--color-obsidian);
+  box-shadow: var(--shadow-md);
+}
+
+.dismiss {
+  min-height:      44px;
+  padding:         var(--space-2xs) var(--space-sm);
+  font-family:     var(--font-sans);
+  font-size:       var(--text-small);
+  color:           var(--color-dust);
+  background:      transparent;
+  cursor:          pointer;
+  transition:      color 0.2s ease;
+}
+
+.dismiss:hover {
+  color: var(--color-silver);
+}

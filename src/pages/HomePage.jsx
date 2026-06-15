@@ -2,6 +2,7 @@ import Hero                from '../components/Hero';
 import AIInterviewPreview  from '../components/AIInterviewPreview';
 import PerennialPreview    from '../components/PerennialPreview';
 import BazaarBlendsPreview from '../components/BazaarBlendsPreview';
+import PhotographyPreview  from '../components/PhotographyPreview';
 import AboutPreview        from '../components/AboutPreview';
 import WorkSamplesPreview  from '../components/WorkSamplesPreview';
 import { usePageMeta }     from '../hooks/usePageMeta';
@@ -18,6 +19,7 @@ export default function HomePage() {
       <AIInterviewPreview />
       <PerennialPreview />
       <BazaarBlendsPreview />
+      <PhotographyPreview />
       <AboutPreview />
       <WorkSamplesPreview />
     </>

@@ -1,0 +1,73 @@
+/* ═══════════════════════════════════════════
+   GRID — 3 columns × 4 rows on desktop
+═══════════════════════════════════════════ */
+.grid {
+  display:               grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:                   var(--space-md);
+  list-style:            none;
+  padding:               0;
+  margin:                0;
+}
+
+.cell {
+  margin: 0;
+}
+
+/* ─── Tile (clickable) ─── */
+.tile {
+  position:      relative;
+  display:       block;
+  width:         100%;
+  aspect-ratio:  3 / 4;          /* uniform 3:4 cells */
+  overflow:      hidden;
+  border:        1px solid rgba(155, 130, 201, 0.2);
+  border-radius: var(--radius-lg);
+  background:    var(--color-charcoal);
+  box-shadow:    var(--shadow-sm);
+  cursor:        pointer;
+  transition:    border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tile:hover {
+  border-color: var(--accent-violet);
+  box-shadow:   var(--shadow-lg);
+}
+
+.tile:focus-visible {
+  outline:        2px solid var(--accent-violet);
+  outline-offset: 2px;
+}
+
+/* Media wrapper is intentionally larger than the tile so the mouse-parallax
+   shift (±10px) never reveals the tile background behind the image. */
+.mediaWrap {
+  position:    absolute;
+  inset:       -14px;
+  will-change: transform;
+}
+
+/* Subtle violet inner ring that fades in on hover */
+.hoverRing {
+  position:       absolute;
+  inset:          0;
+  border-radius:  var(--radius-lg);
+  box-shadow:     inset 0 0 0 1px rgba(155, 130, 201, 0.45);
+  opacity:        0;
+  transition:     opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tile:hover .hoverRing {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap:                   var(--space-sm);
+  }
+}

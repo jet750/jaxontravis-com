@@ -5,6 +5,7 @@ const NAV_LINKS = [
   { label: 'AI Interview',   path: '/interview' },
   { label: 'Perennial',      path: '/perennial' },
   { label: 'Bazaar Blends',  path: '/bazaar-blends' },
+  { label: 'JET Photography', path: '/photography' },
   { label: 'About',          path: '/about' },
   { label: 'Work Samples',   path: '/work-samples' },
 ];

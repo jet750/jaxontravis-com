@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { path: '/interview',     label: 'AI Interview',   accent: 'gold' },
   { path: '/perennial',     label: 'Perennial',      accent: 'botanical' },
   { path: '/bazaar-blends', label: 'Bazaar Blends',  accent: 'ember' },
+  { path: '/photography',   label: 'JET Photography', accent: 'violet' },
   { path: '/about',         label: 'About',          accent: 'cerulean' },
   { path: '/work-samples',  label: 'Work Samples',   accent: 'gold' },
 ];
