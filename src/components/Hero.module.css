@@ -157,6 +157,7 @@
 .card[data-accent="gold"]::before      { background: var(--accent-gold); }
 .card[data-accent="botanical"]::before { background: var(--accent-botanical); }
 .card[data-accent="ember"]::before     { background: var(--accent-ember); }
+.card[data-accent="violet"]::before    { background: var(--accent-violet); }
 .card[data-accent="cerulean"]::before  { background: var(--accent-cerulean); }
 
 .card:hover::before,
@@ -171,6 +172,8 @@
 .card[data-accent="botanical"]:focus-visible { background: var(--tint-botanical-08); }
 .card[data-accent="ember"]:hover,
 .card[data-accent="ember"]:focus-visible     { background: var(--tint-ember-08); }
+.card[data-accent="violet"]:hover,
+.card[data-accent="violet"]:focus-visible    { background: var(--tint-violet-08); }
 .card[data-accent="cerulean"]:hover,
 .card[data-accent="cerulean"]:focus-visible  { background: var(--tint-cerulean-08); }
 
@@ -187,6 +190,7 @@
 .card[data-accent="gold"]      .cardEyebrow { color: var(--accent-gold); }
 .card[data-accent="botanical"] .cardEyebrow { color: var(--accent-botanical); }
 .card[data-accent="ember"]     .cardEyebrow { color: var(--accent-ember); }
+.card[data-accent="violet"]    .cardEyebrow { color: var(--accent-violet); }
 .card[data-accent="cerulean"]  .cardEyebrow { color: var(--accent-cerulean); }
 
 /* ─── Card heading ─── */
@@ -233,6 +237,8 @@
 .card[data-accent="botanical"]:focus-visible .cardArrow { color: var(--accent-botanical); }
 .card[data-accent="ember"]:hover .cardArrow,
 .card[data-accent="ember"]:focus-visible .cardArrow     { color: var(--accent-ember); }
+.card[data-accent="violet"]:hover .cardArrow,
+.card[data-accent="violet"]:focus-visible .cardArrow    { color: var(--accent-violet); }
 .card[data-accent="cerulean"]:hover .cardArrow,
 .card[data-accent="cerulean"]:focus-visible .cardArrow  { color: var(--accent-cerulean); }
 
@@ -284,19 +290,28 @@
   }
 }
 
-/* 1×4 single row at 900px+ */
+/* 3×2 grid at 900px+ */
 @media (min-width: 900px) {
   .cards {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  .cardItem {
+  /* Re-establish a full grid border on every cell, overriding the
+     2-column nth-child rules from the 540px breakpoint above. */
+  .cardItem,
+  .cardItem:nth-child(2n) {
     border-right: 1px solid var(--color-ember-edge);
-    border-bottom: none;
+    border-bottom: 1px solid var(--color-ember-edge);
   }
 
-  .cardItem:last-child {
+  /* No right border on the last column */
+  .cardItem:nth-child(3n) {
     border-right: none;
+  }
+
+  /* No bottom border on the final row */
+  .cardItem:nth-last-child(-n+3) {
+    border-bottom: none;
   }
 
   .card {

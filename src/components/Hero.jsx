@@ -26,11 +26,25 @@ const CARDS = [
     accent:     'ember',
   },
   {
+    path:       '/photography',
+    eyebrow:    'PHOTOGRAPHY',
+    heading:    'JET Photography',
+    descriptor: 'A personal visual archive — landscapes, cityscapes, and travel.',
+    accent:     'violet',
+  },
+  {
     path:       '/about',
     eyebrow:    'ABOUT',
     heading:    'The Through-Line',
     descriptor: 'Process architect. Systems thinker. Carlsbad, CA.',
     accent:     'cerulean',
+  },
+  {
+    path:       '/work-samples',
+    eyebrow:    'PROFESSIONAL',
+    heading:    'Work Samples',
+    descriptor: 'Selected deliverables from past roles. Password-protected — ask for access.',
+    accent:     'gold',
   },
 ];
 
