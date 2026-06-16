@@ -22,7 +22,7 @@ import { Resend } from 'resend';
 // ── source → Sheets tab name ──────────────────────────────────────────────────
 const TAB_MAP = {
   bazaar_waitlist:       'Bazaar Blends Waitlist',
-  perennial_playtester:  'Perennial Waitlist',
+  perennial_playtester:  'Perennial Playtester',
   perennial_kickstarter: 'Perennial Waitlist',
   name_gate:             'Name Gate Log',
   work_samples_gate:     'Work Samples Gate Log',
