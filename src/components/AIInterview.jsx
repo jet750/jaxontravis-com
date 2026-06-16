@@ -106,6 +106,9 @@ export default function AIInterview() {
   // having to take voiceModeActive / speakText as reactive deps).
   const voiceModeActiveRef = useRef(false);
   const speakTextRef       = useRef(null);
+  // Voice mode: guards the one-time first-sentence TTS trigger during streaming
+  // so the post-stream auto-read doesn't double-speak the same reply.
+  const firstSentenceSentRef = useRef(false);
 
   // Scroll-reveal — shared ref works across gate↔chat view transitions
   // because revealed stays true once set (re-render keeps the truthy state)
@@ -120,6 +123,7 @@ export default function AIInterview() {
     voiceSupported,
     transcript,
     startListening,
+    stopListening,
     stopSpeaking,
     speakText,
     toggleVoiceMode: toggleVoiceHook,
@@ -251,6 +255,8 @@ export default function AIInterview() {
   // ── Core SSE streaming ─────────────────────────────
   const streamChat = useCallback(async (apiMessages) => {
     setIsStreaming(true);
+    // New message: re-arm the mid-stream first-sentence TTS trigger.
+    firstSentenceSentRef.current = false;
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
     // Accumulate the full assistant reply for the voice-mode auto-read (below).
     let fullResponseText = '';
@@ -292,6 +298,24 @@ export default function AIInterview() {
             if (error) throw new Error(error);
             if (text) {
               fullResponseText += text;
+
+              // Voice mode: speak the first complete sentence the moment it's
+              // available so audio starts while Claude is still generating the
+              // rest. Detection runs on the ACCUMULATED text (not per-chunk), so
+              // it's robust regardless of chunk granularity — the boundary is
+              // found once the chunk after the sentence's punctuation lands.
+              if (voiceModeActiveRef.current && !firstSentenceSentRef.current) {
+                const sentenceEnd = fullResponseText.search(/[.!?]\s/);
+                if (sentenceEnd !== -1) {
+                  const firstSentence = fullResponseText.slice(0, sentenceEnd + 1).trim();
+                  // Only speak a real sentence, not a short fragment (e.g. "Hi.").
+                  if (firstSentence.length > 20) {
+                    firstSentenceSentRef.current = true;
+                    speakTextRef.current?.(firstSentence, firstSentence);
+                  }
+                }
+              }
+
               setMessages(prev => {
                 const next = [...prev];
                 next[next.length - 1] = {
@@ -327,7 +351,15 @@ export default function AIInterview() {
 
       setLastAIMessage(fullResponseText);
       setLastAIMessageShort(shortVersion);
-      speakTextRef.current?.(fullResponseText, shortVersion);
+
+      // Only auto-speak the short version if the first sentence wasn't already
+      // sent mid-stream — otherwise we'd double-speak the start of the reply.
+      // The "hear full response" button still replays the full text on demand.
+      if (!firstSentenceSentRef.current) {
+        speakTextRef.current?.(fullResponseText, shortVersion);
+      }
+      // Always reset for the next message.
+      firstSentenceSentRef.current = false;
     }
   }, [company, jobText, jdAnalysis]); // jdAnalysis added so the latest analysis (or null) is always sent
 
@@ -584,6 +616,7 @@ export default function AIInterview() {
                 transcript={transcript}
                 isStreaming={isStreaming}
                 onStartListening={startListening}
+                onStopListening={stopListening}
                 onStopSpeaking={stopSpeaking}
                 onHearFullResponse={handleHearFullResponse}
                 hasLastResponse={Boolean(lastAIMessageShort)}

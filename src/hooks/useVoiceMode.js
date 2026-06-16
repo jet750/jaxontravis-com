@@ -15,10 +15,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
  *
  * @param {Object}   opts
  * @param {Function} opts.onTranscriptComplete - called with the final spoken
- *        text once the user stops talking (silence detected) or a final result
- *        arrives. AIInterview passes its existing sendMessage here.
+ *        text when the user taps the mic again to stop (tap-to-stop). The best
+ *        available transcript — accumulated final results, else the latest
+ *        interim — is passed. AIInterview passes its existing sendMessage here.
  */
-const SILENCE_MS = 1500; // auto-send after this much post-speech silence
 
 // Preferred TTS voices in priority order — natural-sounding English voices on
 // the major platforms, falling back to any en-US voice, then the browser default.
@@ -52,26 +52,19 @@ export function useVoiceMode({ onTranscriptComplete } = {}) {
       : undefined;
   const [voiceSupported, setVoiceSupported] = useState(Boolean(SpeechRecognitionImpl));
 
-  const recognitionRef  = useRef(null);
-  const silenceTimerRef = useRef(null);
-  const transcriptRef   = useRef(''); // latest interim text, for the silence timer
-  const currentAudioRef = useRef(null); // active OpenAI TTS <audio> element, for cancellation
+  const recognitionRef     = useRef(null);
+  const finalTranscriptRef = useRef(''); // accumulated final results for the active session
+  const currentAudioRef    = useRef(null); // active OpenAI TTS <audio> element, for cancellation
 
   // Keep the completion callback in a ref so recognition handlers always call
   // the latest sendMessage without re-subscribing listeners on every render.
   const onCompleteRef = useRef(onTranscriptComplete);
   useEffect(() => { onCompleteRef.current = onTranscriptComplete; }, [onTranscriptComplete]);
 
-  const clearSilenceTimer = useCallback(() => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
-  }, []);
-
-  // Stop and tear down any active recognition session. Safe to call repeatedly.
+  // Stop and tear down any active recognition session WITHOUT firing the
+  // completion callback. Used for resets and full teardown; the user-facing
+  // stop is stopListening() below. Safe to call repeatedly.
   const stopRecognition = useCallback(() => {
-    clearSilenceTimer();
     const rec = recognitionRef.current;
     if (rec) {
       // Detach handlers before stopping so a late onend can't flip state back.
@@ -84,18 +77,36 @@ export function useVoiceMode({ onTranscriptComplete } = {}) {
       recognitionRef.current = null;
     }
     setIsListening(false);
-  }, [clearSilenceTimer]);
+  }, []);
 
-  // Fire the completion callback once for a finished utterance, then reset.
-  const finalize = useCallback((text) => {
-    const finalText = (text ?? transcriptRef.current).trim();
-    stopRecognition();
+  // Tap-to-stop: stop the mic, take the best available transcript, fire the
+  // completion callback, then reset. Driven by a second tap on the mic button.
+  const stopListening = useCallback(() => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+
+    // Detach handlers before stopping so the imminent onend can't reset state
+    // out from under us, then stop the mic.
+    try {
+      rec.onresult = null;
+      rec.onerror  = null;
+      rec.onend    = null;
+      rec.stop();
+    } catch { /* no-op */ }
+    recognitionRef.current = null;
+
+    // Best available transcript: accumulated final results, else the latest
+    // interim still showing in the UI.
+    const result = finalTranscriptRef.current.trim() || transcript.trim();
+
+    finalTranscriptRef.current = '';
     setTranscript('');
-    transcriptRef.current = '';
-    if (finalText) {
-      try { onCompleteRef.current?.(finalText); } catch { /* no-op */ }
+    setIsListening(false);
+
+    if (result) {
+      try { onCompleteRef.current?.(result); } catch { /* no-op */ }
     }
-  }, [stopRecognition]);
+  }, [transcript]);
 
   // ── Speech recognition (STT) ───────────────────────────────────────────────
   const startListening = useCallback(() => {
@@ -108,7 +119,7 @@ export function useVoiceMode({ onTranscriptComplete } = {}) {
     // Tear down any prior session before opening a fresh one.
     stopRecognition();
     setTranscript('');
-    transcriptRef.current = '';
+    finalTranscriptRef.current = ''; // reset accumulator for the new session
 
     let recognition;
     try {
@@ -118,43 +129,27 @@ export function useVoiceMode({ onTranscriptComplete } = {}) {
       return;
     }
 
-    recognition.continuous      = false;
+    // Tap-to-stop: continuous keeps the mic open until stopListening() stops it
+    // explicitly, instead of ending after the first utterance.
+    recognition.continuous      = true;
     recognition.interimResults  = true;
     recognition.lang            = 'en-US';
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event) => {
-      // A fresh result means the user is still talking — reset the silence clock.
-      clearSilenceTimer();
-
+      // Accumulate final results into the ref; surface finals + the live interim
+      // in the UI. Nothing auto-sends — completion is driven by stopListening().
       let interim = '';
-      let final   = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const res = event.results[i];
-        if (res.isFinal) final += res[0].transcript;
-        else             interim += res[0].transcript;
+        const t   = res[0].transcript;
+        if (res.isFinal) finalTranscriptRef.current += t + ' ';
+        else             interim += t;
       }
-
-      const text = final || interim;
-      setTranscript(text);
-      transcriptRef.current = text;
-
-      if (final) {
-        // Final result — send immediately, don't wait for silence.
-        finalize(final);
-        return;
-      }
-
-      // Not final yet — treat 1.5s of silence as the end of the utterance.
-      // (recognition's own onend fires too eagerly, so we drive timing here.)
-      silenceTimerRef.current = setTimeout(
-        () => finalize(transcriptRef.current),
-        SILENCE_MS,
-      );
+      setTranscript((finalTranscriptRef.current + interim).trim());
     };
 
     recognition.onerror = (event) => {
-      clearSilenceTimer();
       if (event.error === 'not-allowed') {
         // Permission denied — surface the mic-permission notice in the UI.
         setVoiceSupported(false);
@@ -168,8 +163,9 @@ export function useVoiceMode({ onTranscriptComplete } = {}) {
     };
 
     recognition.onend = () => {
-      // Per spec: onend only resets the mic indicator. Auto-send is driven by
-      // the silence timer / final-result path above, never by onend.
+      // Tap-to-stop drives completion via stopListening() (which detaches this
+      // handler first). A stray onend — e.g. the browser ending the session on
+      // its own — just resets the mic indicator.
       setIsListening(false);
     };
 
@@ -182,7 +178,7 @@ export function useVoiceMode({ onTranscriptComplete } = {}) {
       recognitionRef.current = null;
       setIsListening(false);
     }
-  }, [SpeechRecognitionImpl, stopRecognition, clearSilenceTimer, finalize]);
+  }, [SpeechRecognitionImpl, stopRecognition]);
 
   // ── Speech synthesis (TTS) ─────────────────────────────────────────────────
   // Output is now OpenAI TTS via the /api/tts proxy, with a silent fallback to
@@ -291,7 +287,7 @@ export function useVoiceMode({ onTranscriptComplete } = {}) {
     try { window.speechSynthesis?.cancel(); } catch { /* no-op */ }
     setIsSpeaking(false);
     setTranscript('');
-    transcriptRef.current = '';
+    finalTranscriptRef.current = '';
   }, [stopRecognition]);
 
   // Tear everything down when voice mode turns off: while it's on this effect's
@@ -322,6 +318,7 @@ export function useVoiceMode({ onTranscriptComplete } = {}) {
     isListening,
     isSpeaking,
     startListening,
+    stopListening,
     stopSpeaking,
     speakText,
     voiceSupported,

@@ -7,8 +7,10 @@ import { motion } from 'framer-motion';
  *
  * Props:
  *   isListening, isSpeaking, voiceSupported, transcript, isStreaming (booleans/string)
- *   onStartListening, onStopSpeaking, onHearFullResponse (functions)
+ *   onStartListening, onStopListening, onStopSpeaking, onHearFullResponse (functions)
  *   hasLastResponse (boolean) — a prior AI answer exists to replay in full
+ *
+ * The mic button toggles: tap to start, tap again (onStopListening) to send.
  */
 
 const GOLD = 'var(--accent-gold)';
@@ -25,6 +27,20 @@ function MicIcon({ color }) {
       <path d="M5 11a7 7 0 0 0 14 0" />
       <line x1="12" y1="18" x2="12" y2="21" />
       <line x1="8" y1="21" x2="16" y2="21" />
+    </svg>
+  );
+}
+
+// Shown while listening: a filled stop square signals "tap to stop & send",
+// the inverse affordance of the mic. Reuses the gold accent so it stays on
+// theme rather than introducing a clashing red.
+function StopIcon({ color }) {
+  return (
+    <svg
+      width="22" height="22" viewBox="0 0 24 24"
+      fill={color} stroke="none" aria-hidden="true"
+    >
+      <rect x="6" y="6" width="12" height="12" rx="2" />
     </svg>
   );
 }
@@ -63,6 +79,7 @@ export default function VoiceModeUI({
   transcript,
   isStreaming,
   onStartListening,
+  onStopListening,
   onStopSpeaking,
   onHearFullResponse,
   hasLastResponse = false,
@@ -165,9 +182,9 @@ export default function VoiceModeUI({
         )}
         <button
           type="button"
-          onClick={onStartListening}
+          onClick={isListening ? onStopListening : onStartListening}
           disabled={micDisabled}
-          aria-label="Tap to speak"
+          aria-label={isListening ? 'Tap to stop and send' : 'Tap to speak'}
           style={{
             position:       'relative',
             width:          '64px',
@@ -183,13 +200,25 @@ export default function VoiceModeUI({
             transition:     'background 0.2s ease, border-color 0.2s ease',
           }}
         >
-          <MicIcon color={iconColor} />
+          {isListening
+            ? <StopIcon color={iconColor} />
+            : <MicIcon color={iconColor} />}
         </button>
       </div>
 
       {/* Status line. */}
       {isListening ? (
-        <p style={goldStatus}>Listening…</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+          <p style={goldStatus}>Listening…</p>
+          {/* Tells the recruiter how to stop — tap-to-stop isn't auto-silence. */}
+          <span style={{
+            fontFamily: SANS,
+            fontSize:   '10px',
+            color:      'rgba(255,255,255,0.3)',
+          }}>
+            Tap to send
+          </span>
+        </div>
       ) : isSpeaking ? (
         <p style={goldStatus}>
           Speaking…

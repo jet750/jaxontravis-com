@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'tts-1',           // standard quality — cheapest, lowest latency.
                                   // Swap to 'tts-1-hd' on this line for higher quality.
-        voice: 'nova',            // warm, natural, professional — good for interviews
+        voice: 'onyx',            // warm, natural, professional — good for interviews
         input,
         response_format: 'mp3',
       }),
