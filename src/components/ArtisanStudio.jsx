@@ -1,5 +1,8 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, staggerContainer, DURATION, EASE } from '../lib/motion';
+import { trackEvent } from '../lib/analytics';
+import NotifyModal from './NotifyModal';
 import styles from './ArtisanStudio.module.css';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -190,6 +193,8 @@ function BlendCard({ blend }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ArtisanStudio() {
+  const [notifyOpen, setNotifyOpen] = useState(false);
+
   return (
     <section id="artisan-studio" className={styles.section} data-accent="ember">
       <div className={styles.container}>
@@ -340,15 +345,17 @@ export default function ArtisanStudio() {
         >
           <motion.button
             className={styles.ctaPrimary}
+            onClick={() => setNotifyOpen(true)}
             whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
           >
             Notify me at launch →
           </motion.button>
           <motion.a
-            href="https://instagram.com"
+            href="https://instagram.com/bazaarblends"
             className={styles.ctaOutline}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent('instagram_clicked', { handle: 'bazaarblends', page: 'bazaar-blends' })}
             whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
           >
             Follow on Instagram →
@@ -356,6 +363,19 @@ export default function ArtisanStudio() {
         </motion.div>
 
       </div>
+
+      <AnimatePresence>
+        {notifyOpen && (
+          <NotifyModal
+            isOpen={notifyOpen}
+            onClose={() => setNotifyOpen(false)}
+            source="bazaar_waitlist"
+            accentColor="var(--accent-ember)"
+            title="Join the Bazaar Blends Waitlist"
+            description="Be first to know when we launch at farmers markets and online."
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }

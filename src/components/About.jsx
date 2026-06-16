@@ -44,8 +44,8 @@ const CONTACT = [
   },
   {
     type:  'calendar',
-    label: 'Book a call',
-    href:  '#',
+    label: 'Get in touch',
+    href:  'mailto:jaxontravis7@gmail.com?subject=Let\'s Connect — Jaxon Travis&body=Hi Jaxon,',
   },
 ];
 
@@ -225,8 +225,8 @@ export default function About() {
                 <a
                   href={item.href}
                   className={styles.contactItem}
-                  target={item.type === 'email' ? undefined : '_blank'}
-                  rel={item.type === 'email' ? undefined : 'noopener noreferrer'}
+                  target={item.type === 'email' || item.type === 'calendar' ? undefined : '_blank'}
+                  rel={item.type === 'email' || item.type === 'calendar' ? undefined : 'noopener noreferrer'}
                 >
                   <span className={styles.contactIcon}>
                     {item.type === 'email'    && <IconEmail />}

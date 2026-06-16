@@ -6,6 +6,9 @@
     "api/chat.js": {
       "maxDuration": 30
     },
+    "api/log-lead.js": {
+      "maxDuration": 10
+    },
     "api/analyze-jd.js": {
       "maxDuration": 15
     },

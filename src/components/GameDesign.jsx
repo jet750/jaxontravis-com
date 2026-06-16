@@ -1,6 +1,9 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, staggerContainer, DURATION, EASE } from '../lib/motion';
+import { trackEvent } from '../lib/analytics';
 import TiltCard from './TiltCard';
+import NotifyModal from './NotifyModal';
 import styles from './GameDesign.module.css';
 
 // Real card art (found in src/assets/perennial/). Mapped to the featured
@@ -230,6 +233,9 @@ function SpinoffCard({ spinoff }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function GameDesign() {
+  const [playtesterOpen, setPlaytesterOpen] = useState(false);
+  const [kickstarterOpen, setKickstarterOpen] = useState(false);
+
   return (
     <section id="game-design" className={styles.section} data-accent="botanical">
       <div className={styles.container}>
@@ -367,19 +373,56 @@ export default function GameDesign() {
         >
           <motion.button
             className={styles.ctaPrimary}
+            onClick={() => setPlaytesterOpen(true)}
             whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
           >
             Join the playtester list →
           </motion.button>
           <motion.button
             className={styles.ctaOutline}
+            onClick={() => setKickstarterOpen(true)}
             whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
           >
             Notify me: Kickstarter →
           </motion.button>
+          <motion.a
+            href="https://instagram.com/perennialgame"
+            className={styles.ctaOutline}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackEvent('instagram_clicked', { handle: 'perennialgame', page: 'perennial' })}
+            whileHover={{ scale: 1.02, y: -2, transition: { duration: 0.2 } }}
+          >
+            Follow @perennialgame →
+          </motion.a>
         </motion.div>
 
       </div>
+
+      <AnimatePresence>
+        {playtesterOpen && (
+          <NotifyModal
+            isOpen={playtesterOpen}
+            onClose={() => setPlaytesterOpen(false)}
+            source="perennial_playtester"
+            accentColor="var(--accent-botanical)"
+            title="Join the Playtester List"
+            description="Help shape Perennial before it launches. We'll reach out when the next playtest opens."
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {kickstarterOpen && (
+          <NotifyModal
+            isOpen={kickstarterOpen}
+            onClose={() => setKickstarterOpen(false)}
+            source="perennial_kickstarter"
+            accentColor="var(--accent-botanical)"
+            title="Notify Me: Kickstarter"
+            description="Get notified the moment the Perennial Kickstarter campaign goes live."
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }

@@ -7,6 +7,7 @@ import { trackEvent } from '../lib/analytics';
 import { photos, PRINT_QUOTE_MAILTO } from '../data/photographyConfig';
 import PhotoMedia from '../components/photography/PhotoMedia';
 import PhotoGrid from '../components/photography/PhotoGrid';
+import FilmSection from '../components/photography/FilmSection';
 import Lightbox from '../components/photography/Lightbox';
 import PrintQuotePrompt from '../components/photography/PrintQuotePrompt';
 import styles from './Photography.module.css';
@@ -154,6 +155,9 @@ export default function Photography() {
         </motion.div>
 
         <PhotoGrid photos={photos} onOpen={openLightbox} />
+
+        {/* ── Film: aerial & short film, below the grid, same section ── */}
+        <FilmSection />
 
       </div>
 

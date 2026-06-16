@@ -95,6 +95,9 @@ export function initClarity() {
  *   transcript_sent              — transcript send triggered     { trigger: 'manual'|'auto' }
  *   voice_mode_activated         — recruiter enabled voice mode
  *   work_samples_gate_completed  — Work Samples gate attempt      { outcome: 'granted'|'denied'|'error' }
+ *   notify_modal_opened          — NotifyModal opened (pre-submit) { source }
+ *   waitlist_submitted           — NotifyModal submitted ok        { source, has_name: boolean }
+ *   instagram_clicked            — Instagram CTA clicked           { handle, page }
  */
 export function trackEvent(name, props = {}) {
   try { track(name, props); } catch { /* no-op */ }

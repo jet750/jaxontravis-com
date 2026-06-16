@@ -99,6 +99,30 @@ export const photos = modules && Object.keys(modules).length > 0
   ? buildFromFolder()
   : buildPlaceholders();
 
+// ─── Film / aerial video ─────────────────────────────────────────────────────
+//
+// YouTube iframe embeds work with just the video ID — no API key and no API call
+// required for a basic embed. VITE_YOUTUBE_API_KEY is reserved for a future pass
+// that fetches playlist/metadata dynamically and wires play-event tracking via
+// the YouTube IFrame Player API.
+export const films = [
+  {
+    id: 'bLIuTnK1Qc4',
+    title: 'Birds at Batiquitos Lagoon',
+    location: 'Carlsbad, CA',
+  },
+  {
+    id: '5OVJlgY204A',
+    title: 'Carlsbad Coastal',
+    location: 'Carlsbad, CA',
+  },
+  {
+    id: 'E9_xA7NwBnA',
+    title: 'Flight Over a Misty Lagoon',
+    location: 'Encinitas, CA',
+  },
+];
+
 /** Pre-encoded mailto used by every print-quote CTA (page button + popup). */
 export const PRINT_QUOTE_MAILTO =
   'mailto:jaxontravis7@gmail.com' +
