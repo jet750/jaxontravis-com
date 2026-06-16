@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 
 // Lazy-load fade-in image: opacity animates from 0 to 1 once the image loads.
@@ -8,8 +8,19 @@ import { motion } from 'framer-motion';
 export default function FadeImage({ src, alt, className, style, onError }) {
   const [loaded, setLoaded] = useState(false);
 
+  // A browser-cached image can finish loading before React attaches the onLoad
+  // handler, so the event never fires and the image stays stuck at opacity 0.
+  // This callback ref checks `complete` the moment the node mounts and reveals
+  // already-loaded images immediately.
+  const ref = useCallback((node) => {
+    if (node && node.complete && node.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, []);
+
   return (
     <motion.img
+      ref={ref}
       src={src}
       alt={alt}
       className={className}

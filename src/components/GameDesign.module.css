@@ -144,10 +144,13 @@
    FEATURED CARDS GRID
 ═══════════════════════════════════════════ */
 .cardGrid {
-  display:               grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap:                   var(--space-lg);
-  margin-bottom:         var(--space-4xl);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  margin-bottom: var(--space-4xl);
 }
 
 /* ─── Card frame ─── */
@@ -451,6 +454,10 @@
    RESPONSIVE
 ═══════════════════════════════════════════ */
 @media (max-width: 1023px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .pitch {
     gap: var(--space-lg);
   }
@@ -471,7 +478,6 @@
 
   .cardGrid {
     grid-template-columns: 1fr;
-    gap: var(--space-md);
   }
 
   .spinoffs {
@@ -502,13 +508,16 @@
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
-  .cardGrid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-sm);
-  }
-
   .spinoffs {
     grid-template-columns: 1fr;
     gap: var(--space-sm);
   }
+}
+
+/* ═══════════════════════════════════════════
+   CARD ACCENT (TiltCard accentClass)
+═══════════════════════════════════════════ */
+.botanicalAccent {
+  --card-accent: var(--accent-botanical);
+  --card-glow: rgba(138, 184, 126, 0.15);
 }

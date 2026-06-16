@@ -6,12 +6,11 @@ import TiltCard from './TiltCard';
 import NotifyModal from './NotifyModal';
 import styles from './GameDesign.module.css';
 
-// Real card art (found in src/assets/perennial/). Mapped to the featured
-// cards by position below; if any image fails to load, TiltCard falls back
-// to the inline SVG art passed as fallbackContent.
-import cardBirdsOfParadise from '../assets/perennial/card-birds-of-paradise.webp';
-import cardSaguaroCactus from '../assets/perennial/card-saguaro-cactus.webp';
-import cardBlueMorphoButterfly from '../assets/perennial/card-blue-morpho-butterfly.webp';
+// Card data auto-discovered from src/assets/perennial/ via import.meta.glob.
+// Drop a WebP into that folder and it appears in the grid automatically — no
+// code changes required. If an image fails to load, TiltCard falls back to the
+// inline SVG art passed as fallbackContent.
+import { cards } from '../data/perennialConfig';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -20,36 +19,6 @@ const CHIPS = [
   { label: '60–120 min',       variant: 'neutral' },
   { label: 'Engine-Building',  variant: 'neutral' },
   { label: 'In Playtesting',   variant: 'accent'  },
-];
-
-const FEATURED_CARDS = [
-  {
-    name:      'Birds of Paradise',
-    tier:      'T3',
-    archetype: 'Flowering',
-    mechanic:  'End of season: place 3 Pollen tokens on adjacent plant spaces.',
-    flavor:    'Bred for spectacle. Built for the long season.',
-    artType:   'birds',
-    image:     cardBirdsOfParadise,
-  },
-  {
-    name:      'Saguaro Cactus',
-    tier:      'T2',
-    archetype: 'Succulent',
-    mechanic:  'Drought — immune to dry-season discard. Store 2 Water tokens each season.',
-    flavor:    'A century of patience, measured in inches.',
-    artType:   'saguaro',
-    image:     cardSaguaroCactus,
-  },
-  {
-    name:      'Blue Morpho Butterfly',
-    tier:      null,
-    archetype: 'Pollinator',
-    mechanic:  'Pollinate: move to any adjacent plant and transfer all Pollen tokens.',
-    flavor:    'Iridescence is a defense. Beauty, a strategy.',
-    artType:   'morpho',
-    image:     cardBlueMorphoButterfly,
-  },
 ];
 
 const SPINOFFS = [
@@ -209,9 +178,10 @@ function BeeArt() {
 // ── Fallback SVG art lookup (used when a card image is missing or fails) ───────
 
 const FALLBACK_ART = {
-  birds:   <LilyArt />,
-  saguaro: <SundewArt />,
-  morpho:  <BeeArt />,
+  flowering: <LilyArt />,
+  birds:     <LilyArt />,
+  saguaro:   <SundewArt />,
+  morpho:    <BeeArt />,
 };
 
 // ── Spinoff card ──────────────────────────────────────────────────────────────
@@ -295,38 +265,37 @@ export default function GameDesign() {
           </div>
         </motion.div>
 
-        {/* ── Block 3: Featured card grid — staggerContainer ── */}
-        {/* 3 cards only → standard staggerChildren 0.08 is fine */}
+        {/* ── Block 3: Card gallery grid — staggerContainer ── */}
+        {/* Cards auto-discovered from src/assets/perennial/ (up to 15) ── */}
+        {/* The grid is much taller than the viewport (up to 15 cards), so a high
+            intersection ratio can never be reached — use a small `amount` here so
+            the stagger reliably fires instead of leaving every card at opacity 0. */}
         <motion.div
           className={styles.cardGrid}
           role="list"
-          aria-label="Featured cards"
+          aria-label="Card gallery"
           variants={staggerContainer}
           initial="hidden"
           whileInView="visible"
-          viewport={VIEW}
+          viewport={{ once: true, amount: 0.1 }}
         >
-          {FEATURED_CARDS.map((card, i) => (
-            <motion.div
-              key={card.name}
-              role="listitem"
+          {cards.map((card, i) => (
+            <motion.li
+              key={card.id}
               variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={VIEW}
-              transition={{ duration: DURATION, ease: EASE, delay: i * 0.08 }}
             >
               <TiltCard
-                imageOnly
-                imageSrc={card.image}
-                fallbackContent={FALLBACK_ART[card.artType]}
-                title={card.name}
+                imageSrc={card.src}
+                fallbackContent={FALLBACK_ART['flowering']}
+                title={card.title}
                 tier={card.tier}
                 archetype={card.archetype}
                 mechanic={card.mechanic}
                 flavor={card.flavor}
+                accentClass={styles.botanicalAccent}
+                imageOnly={true}
               />
-            </motion.div>
+            </motion.li>
           ))}
         </motion.div>
 

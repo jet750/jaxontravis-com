@@ -4,6 +4,9 @@ import { fadeInUp, staggerContainer, DURATION, EASE } from '../lib/motion';
 import { trackEvent } from '../lib/analytics';
 import NotifyModal from './NotifyModal';
 import styles from './ArtisanStudio.module.css';
+import logoBg from '../assets/bazaar-blends/bazaar blends logo black background.webp';
+import texasBbq from '../assets/bazaar-blends/spice blend texas bbq in hand.webp';
+import mixingStation from '../assets/bazaar-blends/spice mixing station top down.webp';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -257,6 +260,60 @@ export default function ArtisanStudio() {
           transition={{ duration: DURATION, ease: EASE, delay: 0.2 }}
         >
           <span className={styles.blendEyebrow}>FIRST RELEASE — THREE BLENDS</span>
+        </motion.div>
+
+        {/* ── Block 3a: Video embed ── */}
+        <motion.div
+          className={styles.videoBlock}
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+          transition={{ duration: DURATION, ease: EASE, delay: 0.2 }}
+        >
+          <p className={styles.videoEyebrow}>WATCH</p>
+          <div className={styles.videoWrapper}>
+            <iframe
+              src="https://www.youtube.com/embed/3XpY9EbcVds?rel=0&modestbranding=1&color=white"
+              title="Blend Process — Bazaar Blends"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className={styles.videoFrame}
+            />
+          </div>
+          <p className={styles.videoCaption}>
+            From raw ingredients to finished blend —
+            a look inside the Bazaar Blends process.
+          </p>
+        </motion.div>
+
+        {/* ── Block 3b: Product images ── */}
+        <motion.div
+          className={styles.imageRow}
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={VIEW}
+        >
+          {[
+            { src: logoBg, alt: 'Bazaar Blends logo' },
+            { src: texasBbq, alt: 'Texas BBQ spice blend' },
+            { src: mixingStation, alt: 'Spice mixing station' },
+          ].map((img) => (
+            <motion.div
+              key={img.alt}
+              className={styles.imageCard}
+              variants={fadeInUp}
+            >
+              <img
+                src={img.src}
+                alt={img.alt}
+                className={styles.imageCardImg}
+                loading="lazy"
+              />
+            </motion.div>
+          ))}
         </motion.div>
 
         {/* ── Block 4: Blend card grid — staggerContainer, independent whileInView ── */}

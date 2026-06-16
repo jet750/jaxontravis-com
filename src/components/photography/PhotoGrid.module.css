@@ -19,7 +19,7 @@
   position:      relative;
   display:       block;
   width:         100%;
-  aspect-ratio:  3 / 4;          /* uniform 3:4 cells */
+  aspect-ratio:  4 / 3;          /* uniform 3:4 cells */
   overflow:      hidden;
   border:        1px solid rgba(155, 130, 201, 0.2);
   border-radius: var(--radius-lg);
