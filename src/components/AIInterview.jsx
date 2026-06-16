@@ -9,6 +9,10 @@ import { trackEvent } from '../lib/analytics';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const OPENER   = { role: 'user', content: 'Please begin.' };
 
+// Dev-only gate bypass: type these letters in order (within 2s of each other)
+// while the gate is showing to skip the form. Keyboard-only, no UI affordance.
+const DEV_KEY_SEQUENCE = ['j', 't', 'd', 'e', 'v'];
+
 const STARTER_PROMPTS = [
   'What makes you the right hire for a zero-to-one role?',
   'Tell me about a system you built from scratch.',
@@ -99,7 +103,13 @@ export default function AIInterview() {
 
   const messagesEndRef    = useRef(null);
   const chatInputRef      = useRef(null);
+  const messageListRef    = useRef(null);  // scrollable message container (smart auto-scroll)
+  const userScrolledUpRef = useRef(false); // true when the user scrolled up mid-stream; pauses auto-scroll
   const idleTimerRef      = useRef(null);
+  const devKeyBufferRef   = useRef([]);    // dev gate bypass: rolling buffer of recent key presses
+  const devKeyTimerRef    = useRef(null);  // dev gate bypass: clears the buffer after inactivity
+  const tapCountRef       = useRef(0);     // dev gate bypass (mobile): eyebrow tap counter
+  const tapTimerRef       = useRef(null);  // dev gate bypass (mobile): resets the tap counter
   const transcriptSentRef = useRef(false); // mirrors transcriptSent for non-reactive contexts
   const latestPayloadRef  = useRef(null);  // always holds the most recent sendable payload
   // Mirrors for the streaming completion path (streamChat reads these without
@@ -162,8 +172,27 @@ export default function AIInterview() {
 
   // ── Existing effects ────────────────────────────────
 
-  // Auto-scroll on new message content
+  // Detect when the user manually scrolls up during streaming — disable
+  // auto-scroll until the next message send so they can read freely.
+  // Depends on chatOpen so the listener (re)attaches when the chat view —
+  // and therefore the scrollable messageList div — actually mounts.
   useEffect(() => {
+    const el = messageListRef.current;
+    if (!el) return;
+
+    function handleScroll() {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      // More than 80px from the bottom counts as an intentional scroll up.
+      userScrolledUpRef.current = distanceFromBottom > 80;
+    }
+
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [chatOpen]);
+
+  // Smart auto-scroll — only fires when the user is already near the bottom.
+  useEffect(() => {
+    if (userScrolledUpRef.current) return;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }, [messages]);
 
@@ -171,6 +200,49 @@ export default function AIInterview() {
   useEffect(() => {
     if (chatOpen && !isStreaming) chatInputRef.current?.focus();
   }, [chatOpen, isStreaming]);
+
+  // Dev gate bypass — listen for the "jtdev" key sequence while the gate is
+  // showing. Sequential presses (cheat-code style), buffer self-clears after 2s.
+  useEffect(() => {
+    function handleDevKey(e) {
+      // Only active while the gate is showing — never during an open chat.
+      if (chatOpen) return;
+
+      const key = e.key.toLowerCase();
+      // Only track keys that belong to the sequence.
+      if (!DEV_KEY_SEQUENCE.includes(key)) return;
+
+      devKeyBufferRef.current.push(key);
+
+      // Reset the buffer after 2s of inactivity.
+      clearTimeout(devKeyTimerRef.current);
+      devKeyTimerRef.current = setTimeout(() => {
+        devKeyBufferRef.current = [];
+      }, 2000);
+
+      // Match against the tail of the buffer so leading noise doesn't block it.
+      const buf = devKeyBufferRef.current;
+      const seq = DEV_KEY_SEQUENCE;
+      const matches =
+        buf.length >= seq.length &&
+        buf.slice(-seq.length).every((k, i) => k === seq[i]);
+
+      if (matches) {
+        devKeyBufferRef.current = [];
+        clearTimeout(devKeyTimerRef.current);
+        activateDevBypass();
+      }
+    }
+
+    window.addEventListener('keydown', handleDevKey);
+    return () => {
+      window.removeEventListener('keydown', handleDevKey);
+      clearTimeout(devKeyTimerRef.current);
+    };
+    // chatOpen is the only gate; activateDevBypass reads live state via setters,
+    // so it needn't re-bind the listener.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatOpen]);
 
   // showPostCta is derived: no effect or state needed.
   const showPostCta = messages.filter(m => m.role === 'assistant' && m.content).length >= 3;
@@ -456,9 +528,71 @@ export default function AIInterview() {
     await streamChat([OPENER]);
   }
 
+  // ── Dev gate bypass (testing only) ─────────────────
+  // Replicates a successful gate completion without the form UI: pre-fills the
+  // gate fields with DEV TEST credentials and mirrors every state setter from
+  // handleGateSubmit, so the chat, transcript email, and sheet log all behave
+  // exactly as a real session. Entries are labeled "DEV TEST" for easy filtering.
+  function activateDevBypass() {
+    const bypassPayload = {
+      name:      'Jaxon Travis',
+      company:   'DEV TEST',
+      email:     'jaxontravis7@gmail.com',
+      jobUrl:    null,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Same fire-and-forget lead log the real gate fires — keeps the sheet
+    // accurate but clearly marked as a dev session.
+    fetch('/api/log-lead', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(bypassPayload),
+    }).catch(() => {});
+
+    // Mirror the state a real gate completion produces. name/company/email are
+    // normally filled by the form inputs, so we set them here; the rest matches
+    // handleGateSubmit's success path exactly.
+    setName('Jaxon Travis');
+    setCompany('DEV TEST');
+    setEmail('jaxontravis7@gmail.com');
+    setChatOpen(true);
+    try { localStorage.setItem('jt_interview_started', 'true'); } catch { /* no-op */ }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Browser-devtools-only indicator — never rendered to the page.
+    console.log('[DEV] Gate bypassed — test session active');
+
+    // Same chat kickoff as a real gate completion.
+    streamChat([OPENER]);
+  }
+
+  // Mobile dev gate bypass — 7 taps on the eyebrow within 2s triggers the same
+  // bypass. Fast enough to be intentional, slow enough that a recruiter
+  // scrolling past won't trip it. Counter self-resets after 2s of inactivity.
+  function handleEyebrowTap() {
+    if (chatOpen) return;
+
+    tapCountRef.current += 1;
+    clearTimeout(tapTimerRef.current);
+
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 2000);
+
+    if (tapCountRef.current >= 7) {
+      tapCountRef.current = 0;
+      clearTimeout(tapTimerRef.current);
+      activateDevBypass();
+    }
+  }
+
   // ── Chat submit ────────────────────────────────────
   // Single send path used by the input form and the starter chips alike.
   async function sendMessage(raw) {
+    // New send: re-enable auto-scroll so the chat snaps to the user's own
+    // message and the start of the incoming response.
+    userScrolledUpRef.current = false;
     const text = raw.trim();
     if (!text || isStreaming) return;
     setChatInput('');
@@ -521,33 +655,12 @@ export default function AIInterview() {
               Session for <strong>{company}</strong>
               {jobText && <span className={styles.jdBadge}>· JD loaded</span>}
             </p>
-            {voiceSupported !== false && (
-              <button
-                type="button"
-                onClick={handleToggleVoiceMode}
-                style={{
-                  position:      'absolute',
-                  top:           0,
-                  right:         0,
-                  background:    'transparent',
-                  border:        `1px solid rgba(212,168,63,${voiceModeActive ? 0.9 : 0.4})`,
-                  color:         'var(--accent-gold)',
-                  borderRadius:  '20px',
-                  padding:       '4px 10px',
-                  fontSize:      '11px',
-                  letterSpacing: '0.08em',
-                  cursor:        'pointer',
-                  fontFamily:    'var(--font-sans)',
-                }}
-              >
-                {voiceModeActive ? '✕ Voice' : '🎙 Voice'}
-              </button>
-            )}
           </header>
 
           <div className={styles.chatShell}>
             <div
               className={styles.messageList}
+              ref={messageListRef}
               role="log"
               aria-live="polite"
               aria-label="Interview conversation"
@@ -648,6 +761,28 @@ export default function AIInterview() {
               >
                 {isStreaming ? '…' : 'Send →'}
               </motion.button>
+              {voiceSupported !== false && (
+                <button
+                  type="button"
+                  onClick={handleToggleVoiceMode}
+                  style={{
+                    background:    'transparent',
+                    border:        `1px solid rgba(212,168,63,${voiceModeActive ? 0.9 : 0.4})`,
+                    color:         'var(--accent-gold)',
+                    borderRadius:  '20px',
+                    padding:       '0 12px',
+                    height:        '100%',
+                    fontSize:      '11px',
+                    letterSpacing: '0.08em',
+                    cursor:        'pointer',
+                    fontFamily:    'var(--font-sans)',
+                    whiteSpace:    'nowrap',
+                    flexShrink:    0,
+                  }}
+                >
+                  {voiceModeActive ? '✕ Voice' : '🎙 Voice'}
+                </button>
+              )}
             </form>
             )}
           </div>
@@ -724,7 +859,7 @@ export default function AIInterview() {
     <section id="ai-interview" className={styles.section} data-accent="gold">
       <div className={styles.container} ref={containerRef} data-reveal={revealed ? 'true' : 'false'}>
         <header className={styles.sectionTop}>
-          <span className={styles.eyebrow}>PROFESSIONAL</span>
+          <span className={styles.eyebrow} onClick={handleEyebrowTap}>PROFESSIONAL</span>
           <h2 className={styles.heading}>Interview Me Before You Hire Me</h2>
           <p className={styles.subhead}>
             Talk to an AI trained on my full background. Takes 5 minutes.
