@@ -30,7 +30,9 @@ export default function RecruiterNudge({ visible, onDismiss }) {
         bottom: 24,
         right: 24,
         zIndex: 100,
-        maxWidth: 280,
+        // Cap to the viewport on very narrow phones (e.g. ≤311px) so the card
+        // can never touch the screen edge; 280px elsewhere.
+        maxWidth: 'min(280px, calc(100vw - 32px))',
         background: '#1a1714',
         border: '1px solid rgba(212, 168, 63, 0.25)',
         borderRadius: 8,
@@ -46,12 +48,19 @@ export default function RecruiterNudge({ visible, onDismiss }) {
         onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(240, 235, 226, 0.8)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(240, 235, 226, 0.4)'; }}
         style={{
+          // 44×44 hit area (WCAG 2.5.5) anchored to the corner; the visible ×
+          // stays top-right via flex alignment + padding.
           position: 'absolute',
-          top: 6,
-          right: 10,
+          top: 0,
+          right: 0,
+          width: 44,
+          height: 44,
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-end',
           background: 'transparent',
           border: 'none',
-          padding: 2,
+          padding: '8px 12px',
           margin: 0,
           fontSize: 16,
           lineHeight: 1,

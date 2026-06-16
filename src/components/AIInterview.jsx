@@ -44,17 +44,20 @@ function renderMarkdown(text) {
     .replace(/>/g, '&gt;');
 
   return text
-    // Bold: **text** or __text__
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/__(.*?)__/g, '<strong>$1</strong>')
-    // Italic: *text* or _text_ (single, not double)
-    .replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
-    .replace(/(?<!_)_(?!_)(.*?)(?<!_)_(?!_)/g, '<em>$1</em>')
-    // Inline code: `code`
+    // Inline code: `code` — runs first so backtick content is extracted
+    // before any emphasis regex can touch it
     .replace(/`([^`]+)`/g,
       '<code style="background:rgba(255,255,255,0.08);' +
       'padding:2px 6px;border-radius:3px;font-family:' +
       'var(--font-mono);font-size:0.9em;">$1</code>')
+    // Bold: **text** or __text__
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.*?)__/g, '<strong>$1</strong>')
+    // Italic: *text* or _text_ (single, not double). Underscore italic uses a
+    // GitHub-style intraword rule — only matches when the underscores are bounded
+    // by whitespace/start/end, so snake_case and URLs are left untouched.
+    .replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+    .replace(/(^|\s)_([^_]+?)_(\s|$)/g, '$1<em>$2</em>$3')
     // Line breaks: double newline → paragraph break,
     // single newline → <br>
     .replace(/\n\n/g, '</p><p style="margin:0 0 8px;">')
