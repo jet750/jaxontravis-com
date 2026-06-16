@@ -1,7 +1,47 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import styles from './Nav.module.css';
+
+// Desktop nav link with a subtle magnetic pull toward the cursor. Hooks must be
+// called at the component's top level (not inside Nav's NAV_LINKS.map), so each
+// link is its own component. The onMouseMove handler only fires on pointer
+// devices, so touch devices never trigger the effect.
+function MagneticNavLink({ path, label, accent, isActive }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 300, damping: 25 });
+  const springY = useSpring(y, { stiffness: 300, damping: 25 });
+
+  function handleMouseMove(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    x.set((e.clientX - (rect.left + rect.width / 2)) * 0.25);
+    y.set((e.clientY - (rect.top + rect.height / 2)) * 0.25);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  return (
+    <motion.div
+      style={{ x: springX, y: springY, display: 'inline-flex' }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <Link
+        className={`${styles.link} ${isActive ? styles.active : ''}`}
+        data-accent={accent}
+        to={path}
+        aria-current={isActive ? 'page' : undefined}
+      >
+        <span className={styles.dot} aria-hidden="true" />
+        {label}
+      </Link>
+    </motion.div>
+  );
+}
 
 const NAV_LINKS = [
   { path: '/interview',     label: 'AI Interview',   accent: 'gold' },
@@ -67,20 +107,14 @@ export default function Nav() {
           <nav aria-label="Site navigation">
             <ul className={styles.linkList}>
               {NAV_LINKS.map(({ path, label, accent }) => (
-                <motion.li
-                  key={path}
-                  whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
-                >
-                  <Link
-                    className={`${styles.link} ${isActive(path) ? styles.active : ''}`}
-                    data-accent={accent}
-                    to={path}
-                    aria-current={isActive(path) ? 'page' : undefined}
-                  >
-                    <span className={styles.dot} aria-hidden="true" />
-                    {label}
-                  </Link>
-                </motion.li>
+                <li key={path}>
+                  <MagneticNavLink
+                    path={path}
+                    label={label}
+                    accent={accent}
+                    isActive={isActive(path)}
+                  />
+                </li>
               ))}
             </ul>
           </nav>

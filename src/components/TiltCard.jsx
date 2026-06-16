@@ -6,6 +6,7 @@ import {
   useTransform,
   useMotionTemplate,
 } from 'framer-motion';
+import FadeImage from './FadeImage';
 import styles from './TiltCard.module.css';
 
 /**
@@ -87,7 +88,7 @@ export default function TiltCard({
       >
         <div className={`${styles.artArea} ${imageOnly ? styles.artAreaFull : ''}`}>
           {showImage ? (
-            <img
+            <FadeImage
               className={styles.artImg}
               src={imageSrc}
               alt={title}

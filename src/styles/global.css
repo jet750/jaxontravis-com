@@ -94,11 +94,43 @@ code, pre, kbd {
   margin-inline: auto;
 }
 
-/* ─── Focus visible ─── */
+/* ─── Custom focus rings — keyboard nav (:focus-visible only) ─── */
+/* Base ring follows the section accent via --current-accent (set by the
+   data-accent scopes in tokens.css), falling back to gold outside any
+   section context — e.g. the nav/header. */
 :focus-visible {
   outline: 2px solid var(--current-accent, var(--accent-gold));
   outline-offset: 3px;
   border-radius: var(--radius-sm);
+}
+
+/* Section-specific focus rings via data-accent on nav links (set in Nav.jsx).
+   Explicit per-accent overrides so the ring matches even when the link sits
+   outside a section's --current-accent scope. */
+[data-accent="gold"]:focus-visible      { outline-color: var(--accent-gold);      }
+[data-accent="botanical"]:focus-visible { outline-color: var(--accent-botanical); }
+[data-accent="ember"]:focus-visible     { outline-color: var(--accent-ember);     }
+[data-accent="cerulean"]:focus-visible  { outline-color: var(--accent-cerulean);  }
+[data-accent="violet"]:focus-visible    { outline-color: var(--accent-violet);    }
+
+/* Remove default outline — only show :focus-visible (keyboard nav),
+   never :focus (mouse click). */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* AI Interview chat input — gold ring */
+.chatInput:focus-visible,
+[class*="chatInput"]:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+/* Buttons in the chat interface */
+[class*="sendButton"]:focus-visible,
+[class*="gateInput"]:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
 }
 
 /* ─── Selection ─── */
