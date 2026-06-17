@@ -13,11 +13,25 @@ const OPENER   = { role: 'user', content: 'Please begin.' };
 // while the gate is showing to skip the form. Keyboard-only, no UI affordance.
 const DEV_KEY_SEQUENCE = ['j', 't', 'd', 'e', 'v'];
 
+// Starter prompt tiles. `label` is the chip text the recruiter sees; `message`
+// is the question actually sent to the AI when the chip is clicked.
 const STARTER_PROMPTS = [
-  'What makes you the right hire for a zero-to-one role?',
-  'Tell me about a system you built from scratch.',
-  'How do you work across teams and up to the executive level?',
-  'What are you building outside of work?',
+  {
+    label:   'How do you fit this role?',
+    message: 'Walk me through how your background fits the job description.',
+  },
+  {
+    label:   'What strengths would you bring?',
+    message: 'What specific strengths would you bring to this role?',
+  },
+  {
+    label:   'How have you translated founder vision into systems?',
+    message: 'What experience do you have translating founder vision into actionable systems?',
+  },
+  {
+    label:   'Tell me about your side projects.',
+    message: "Tell me about the projects you're working on outside of your day job.",
+  },
 ];
 
 const PREVIEW_MESSAGES = [
@@ -91,6 +105,7 @@ export default function AIInterview() {
   const [messages,       setMessages]       = useState([]);
   const [chatInput,      setChatInput]      = useState('');
   const [isStreaming,    setIsStreaming]     = useState(false);
+  const [isScrolledUp,   setIsScrolledUp]    = useState(false); // mirrors userScrolledUpRef for the scroll-to-latest button
   const [transcriptSent, setTranscriptSent] = useState(false);
   const [emailStatus,    setEmailStatus]    = useState('idle'); // 'idle'|'sending'|'sent'|'error'
   const [ccEmail,        setCcEmail]        = useState('');     // optional extra recipient for manual send
@@ -101,10 +116,15 @@ export default function AIInterview() {
   const [lastAIMessage,      setLastAIMessage]      = useState('');
   const [lastAIMessageShort, setLastAIMessageShort] = useState('');
 
-  const messagesEndRef    = useRef(null);
+  const scrollAnchorRef   = useRef(null);  // invisible end-of-list anchor we scroll into view
   const chatInputRef      = useRef(null);
   const messageListRef    = useRef(null);  // scrollable message container (smart auto-scroll)
   const userScrolledUpRef = useRef(false); // true when the user scrolled up mid-stream; pauses auto-scroll
+  const scrollThrottleRef = useRef(null);  // throttles the scroll-position check to ~100ms
+  const tokenBufferRef    = useRef('');    // rAF buffer: SSE tokens accumulated between paints
+  const rafScheduledRef   = useRef(false); // rAF buffer: a flush is already queued for this frame
+  const rafIdRef          = useRef(null);  // rAF buffer: id of the pending frame (for cancellation)
+  const usedPromptsRef    = useRef(new Set()); // starter prompt labels already clicked
   const idleTimerRef      = useRef(null);
   const devKeyBufferRef   = useRef([]);    // dev gate bypass: rolling buffer of recent key presses
   const devKeyTimerRef    = useRef(null);  // dev gate bypass: clears the buffer after inactivity
@@ -180,21 +200,29 @@ export default function AIInterview() {
     const el = messageListRef.current;
     if (!el) return;
 
+    // Throttle the position check to ~100ms so it doesn't run on every scroll pixel.
     function handleScroll() {
-      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-      // More than 80px from the bottom counts as an intentional scroll up.
-      userScrolledUpRef.current = distanceFromBottom > 80;
+      if (scrollThrottleRef.current) return;
+      scrollThrottleRef.current = setTimeout(() => {
+        scrollThrottleRef.current = null;
+        // "Scrolled up" once the user is more than 50px from the bottom.
+        const scrolledUp = el.scrollTop + el.clientHeight < el.scrollHeight - 50;
+        userScrolledUpRef.current = scrolledUp;
+        setIsScrolledUp(scrolledUp);
+      }, 100);
     }
 
     el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => el.removeEventListener('scroll', handleScroll);
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollThrottleRef.current);
+      scrollThrottleRef.current = null;
+    };
   }, [chatOpen]);
 
-  // Smart auto-scroll — only fires when the user is already near the bottom.
-  useEffect(() => {
-    if (userScrolledUpRef.current) return;
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-  }, [messages]);
+  // NOTE: auto-scroll is no longer a [messages] effect. It now runs inside the
+  // rAF token-buffer flush (streamChat) and on user send, so it stays synced to
+  // the paint cycle and respects userScrolledUpRef.
 
   // Focus chat input when streaming ends
   useEffect(() => {
@@ -246,6 +274,15 @@ export default function AIInterview() {
 
   // showPostCta is derived: no effect or state needed.
   const showPostCta = messages.filter(m => m.role === 'assistant' && m.content).length >= 3;
+
+  // ── Starter prompt visibility ──────────────────────
+  // Turn count = completed back-and-forth exchanges; each real user message
+  // marks one turn. Turn 0: show all 4. Turns 1–3: only unused. Turn 4+: none.
+  // Never during streaming. Hidden once all 4 have been used.
+  const userTurnCount    = messages.filter(m => m.role === 'user').length;
+  const availablePrompts = STARTER_PROMPTS.filter(p => !usedPromptsRef.current.has(p.label));
+  const showStarterPrompts =
+    chatOpen && !isStreaming && userTurnCount < 4 && availablePrompts.length > 0;
 
   // ── Transcript send function ───────────────────────
   // useCallback with [] is correct: all reads go through refs (latestPayloadRef,
@@ -324,6 +361,11 @@ export default function AIInterview() {
     };
   }, []);
 
+  // Cancel any pending rAF token flush if the component unmounts mid-stream.
+  useEffect(() => () => {
+    if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
+  }, []);
+
   // ── Core SSE streaming ─────────────────────────────
   const streamChat = useCallback(async (apiMessages) => {
     setIsStreaming(true);
@@ -332,6 +374,38 @@ export default function AIInterview() {
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
     // Accumulate the full assistant reply for the voice-mode auto-read (below).
     let fullResponseText = '';
+
+    // ── rAF token buffer ──────────────────────────────
+    // Tokens arrive faster than the browser paints. Rather than a setState per
+    // token (~60 re-renders + scrolls/sec), accumulate tokens in a ref and flush
+    // them to state once per animation frame, in sync with the paint cycle.
+    tokenBufferRef.current  = '';
+    rafScheduledRef.current = false;
+
+    const flushTokens = () => {
+      rafScheduledRef.current = false;
+      rafIdRef.current = null;
+      const chunk = tokenBufferRef.current;
+      if (!chunk) return;
+      tokenBufferRef.current = '';
+      setMessages(prev => {
+        const next = [...prev];
+        const last = next[next.length - 1];
+        if (!last || last.role !== 'assistant') return prev;
+        next[next.length - 1] = { ...last, content: last.content + chunk };
+        return next;
+      });
+      // Smart auto-scroll: only follow the stream if the user hasn't scrolled up.
+      if (!userScrolledUpRef.current) {
+        scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    };
+
+    const scheduleFlush = () => {
+      if (rafScheduledRef.current) return;
+      rafScheduledRef.current = true;
+      rafIdRef.current = requestAnimationFrame(flushTokens);
+    };
 
     try {
       const res = await fetch('/api/chat', {
@@ -388,19 +462,25 @@ export default function AIInterview() {
                 }
               }
 
-              setMessages(prev => {
-                const next = [...prev];
-                next[next.length - 1] = {
-                  ...next[next.length - 1],
-                  content: next[next.length - 1].content + text,
-                };
-                return next;
-              });
+              // Buffer the token; the rAF flush applies it on the next paint.
+              tokenBufferRef.current += text;
+              scheduleFlush();
             }
           } catch { /* ignore malformed SSE lines */ }
         }
       }
+
+      // Stream finished cleanly — flush any tokens buffered in the final frame.
+      if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+      rafScheduledRef.current = false;
+      flushTokens();
     } catch {
+      // Drop any buffered tokens so a late flush can't append to the error notice.
+      if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+      rafScheduledRef.current = false;
+      tokenBufferRef.current = '';
       setMessages(prev => {
         const next = [...prev];
         next[next.length - 1] = {
@@ -593,6 +673,7 @@ export default function AIInterview() {
     // New send: re-enable auto-scroll so the chat snaps to the user's own
     // message and the start of the incoming response.
     userScrolledUpRef.current = false;
+    setIsScrolledUp(false);
     const text = raw.trim();
     if (!text || isStreaming) return;
     setChatInput('');
@@ -600,6 +681,11 @@ export default function AIInterview() {
     const userMsg    = { role: 'user', content: text };
     const nextDisplay = [...messages, userMsg];
     setMessages(nextDisplay);
+    // Snap the user's own message into view on the next paint; the rAF flush
+    // takes over scrolling once the assistant's tokens start arriving.
+    requestAnimationFrame(() => {
+      scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    });
 
     // Count only — message content is intentionally never sent to analytics
     trackEvent('chat_message_sent', {
@@ -631,9 +717,11 @@ export default function AIInterview() {
     doSend(false);
   }
 
-  // Starter chip: submit straight through the shared send path
+  // Starter chip: mark it used (so it won't reappear) and submit its message
+  // through the shared send path.
   function handleChipClick(prompt) {
-    sendMessage(prompt);
+    usedPromptsRef.current.add(prompt.label);
+    sendMessage(prompt.message);
   }
 
   // ── Validation flags ───────────────────────────────
@@ -686,7 +774,11 @@ export default function AIInterview() {
                     ) : (
                       <p className={styles.bubbleText}>
                         {isStreaming && i === messages.length - 1 ? (
-                          <span className={styles.cursor} aria-label="Generating" />
+                          <span className={styles.thinking} aria-label="Thinking">
+                            <span className={styles.thinkingDot} />
+                            <span className={styles.thinkingDot} />
+                            <span className={styles.thinkingDot} />
+                          </span>
                         ) : null}
                       </p>
                     )
@@ -696,30 +788,47 @@ export default function AIInterview() {
                 </div>
               ))}
 
-              {!hasRealUserMsg && (
+              {showStarterPrompts && (
                 <div className={styles.idleState}>
-                  <p className={styles.idleCopy}>
-                    I've been trained on Jaxon's full background — ask me anything
-                    you'd ask him in a screening call.
-                  </p>
+                  {userTurnCount === 0 && (
+                    <p className={styles.idleCopy}>
+                      I've been trained on Jaxon's full background — ask me anything
+                      you'd ask him in a screening call.
+                    </p>
+                  )}
                   <div className={styles.chipRow}>
-                    {STARTER_PROMPTS.map(prompt => (
+                    {availablePrompts.map(prompt => (
                       <button
-                        key={prompt}
+                        key={prompt.label}
                         type="button"
                         className={styles.chip}
                         onClick={() => handleChipClick(prompt)}
                         disabled={isStreaming}
                       >
-                        {prompt}
+                        {prompt.label}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div ref={messagesEndRef} />
+              <div ref={scrollAnchorRef} />
             </div>
+
+            {isScrolledUp && isStreaming && (
+              <button
+                type="button"
+                className={styles.scrollToLatest}
+                onClick={() => {
+                  scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                  userScrolledUpRef.current = false;
+                  setIsScrolledUp(false);
+                }}
+                aria-label="Scroll to latest message"
+              >
+                ↓ Latest
+              </button>
+            )}
 
             {voiceModeActive ? (
               <VoiceModeUI

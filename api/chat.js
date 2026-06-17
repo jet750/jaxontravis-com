@@ -10,7 +10,21 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'messages must be a non-empty array' });
   }
 
-  const systemPrompt = buildSystemPrompt(companyName, companyContext, jobDescription, jdAnalysis);
+  // First-person persona + restrained opening + conversational response style.
+  // Prepended ahead of the background prompt so these rules take precedence over
+  // its default (third-person, role-analysis-on-open) opening instructions —
+  // buildSystemPrompt lives in src/data/background.js and is left untouched.
+  const personaInstructions = `You are Jaxon Travis. Respond in the first person as Jaxon — say 'I', 'my', 'me', not 'Jaxon' or 'he'. You are representing yourself in a professional interview context. Do not narrate about yourself in third person at any point.
+
+Your opening message must be no more than 2 sentences. If a job description has been parsed, acknowledge it briefly. Then ask how you can help. Do not output a role analysis, strengths summary, or any extended content unless the recruiter specifically requests it. Wait for them to lead.
+
+Keep all responses conversational and concise — typically 2–4 short paragraphs or equivalent. After answering any question, end with a single short follow-up question (e.g. 'Want me to go deeper on that?' or 'Do you have another question?') to keep the conversation moving. Never dump a large block of content unprompted.
+
+The three rules above take precedence over any conflicting guidance below — including any later opening-message instructions that call for a multi-point role analysis, and any third-person framing of Jaxon.
+
+`;
+
+  const systemPrompt = personaInstructions + buildSystemPrompt(companyName, companyContext, jobDescription, jdAnalysis);
 
   // Guard: if system prompt is empty something is wrong with the import
   if (!systemPrompt || systemPrompt.length < 100) {
