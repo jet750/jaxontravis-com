@@ -73,7 +73,7 @@
    GATE FORM
 ════════════════════════════════════════════ */
 .formSide {
-  /* stays left column */
+  grid-column: 1; /* stays left column */
 }
 
 .formStep {
@@ -279,6 +279,7 @@
   gap:             var(--space-sm);
   filter:          blur(3px);
   pointer-events:  none;
+  -webkit-user-select: none;
   user-select:     none;
 }
 
@@ -291,8 +292,8 @@
   justify-content: center;
   gap:      var(--space-sm);
   background: rgba(20, 18, 16, 0.6);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 .lockIcon {
