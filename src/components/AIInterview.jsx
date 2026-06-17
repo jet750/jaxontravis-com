@@ -382,6 +382,21 @@ export default function AIInterview() {
     tokenBufferRef.current  = '';
     rafScheduledRef.current = false;
 
+    // True when the end-of-list anchor is currently within the scrollable
+    // message area. Short replies that already fit don't move the anchor below
+    // the fold, so re-running scrollIntoView every frame just restarts the
+    // smooth animation each paint — which is what made short messages jumpy.
+    const isAnchorInView = () => {
+      const container = messageListRef.current;
+      const anchor    = scrollAnchorRef.current;
+      if (!container || !anchor) return false;
+      const containerRect = container.getBoundingClientRect();
+      const anchorRect    = anchor.getBoundingClientRect();
+      // Zero-height anchor: "in view" when its top sits at/above the container's
+      // bottom edge (+1px tolerance so sub-pixel growth doesn't force a scroll).
+      return anchorRect.top <= containerRect.bottom + 1;
+    };
+
     const flushTokens = () => {
       rafScheduledRef.current = false;
       rafIdRef.current = null;
@@ -395,8 +410,11 @@ export default function AIInterview() {
         next[next.length - 1] = { ...last, content: last.content + chunk };
         return next;
       });
-      // Smart auto-scroll: only follow the stream if the user hasn't scrolled up.
-      if (!userScrolledUpRef.current) {
+      // Smart auto-scroll: only follow the stream if the user hasn't scrolled
+      // up, this frame actually added content, and the anchor has dropped below
+      // the visible area. Skipping the call while the anchor is already visible
+      // is what stops short replies from jittering.
+      if (!userScrolledUpRef.current && chunk.length > 0 && !isAnchorInView()) {
         scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
       }
     };
