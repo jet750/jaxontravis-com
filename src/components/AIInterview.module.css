@@ -529,6 +529,18 @@
   cursor:  not-allowed;
 }
 
+/* ─── AI disclaimer (plain caption under the input) ─── */
+.inputDisclaimer {
+  margin:      var(--space-xs) auto 0;
+  max-width:   520px;
+  font-family: var(--font-sans);   /* Inter */
+  font-size:   11px;
+  font-style:  italic;
+  text-align:  center;
+  line-height: var(--leading-body);
+  color:       rgba(245, 239, 230, 0.45);  /* parchment @ 45% */
+}
+
 /* ─── Floating "scroll to latest" pill ─── */
 .scrollToLatest {
   position:       absolute;

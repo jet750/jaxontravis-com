@@ -1,3 +1,4 @@
+import { createSign } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { Resend } from 'resend';
 import rubric from './rubric.js';
@@ -43,10 +44,86 @@ function buildTranscriptHtml(messages) {
   }).join('\n');
 }
 
+// ── JWT bearer token for a Google service account ─────────────────────────────
+// Reused verbatim from api/log-lead.js — signs a JWT with the Node built-in
+// crypto module, so this stays on the same auth pattern with no extra dependency.
+async function getAccessToken(serviceAccount) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({
+    alg: 'RS256', typ: 'JWT',
+  })).toString('base64url');
+
+  const claim = Buffer.from(JSON.stringify({
+    iss: serviceAccount.client_email,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now,
+  })).toString('base64url');
+
+  const sign = createSign('RSA-SHA256');
+  sign.update(`${header}.${claim}`);
+  const sig = sign.sign(serviceAccount.private_key, 'base64url');
+  const jwt = `${header}.${claim}.${sig}`;
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+  const data = await res.json();
+  return data.access_token;
+}
+
+// ── Google Sheets transcript log ──────────────────────────────────────────────
+// Appends one row (columns A–I) per transcript to the TRANSCRIPT_SHEET_ID
+// spreadsheet — a SEPARATE sheet from log-lead.js's GOOGLE_SHEET_ID. Throws on
+// any failure; the caller wraps this in its own try/catch so a Sheets problem
+// can never alter the email response.
+async function logTranscriptToSheet(row) {
+  const SHEET_ID   = process.env.TRANSCRIPT_SHEET_ID;
+  const rawAccount = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+  if (!rawAccount || !SHEET_ID) {
+    throw new Error('Missing GOOGLE_SERVICE_ACCOUNT_JSON or TRANSCRIPT_SHEET_ID');
+  }
+
+  const serviceAccount = JSON.parse(rawAccount);
+  const accessToken    = await getAccessToken(serviceAccount);
+  if (!accessToken) throw new Error('Token endpoint returned no access_token');
+
+  // A range with no sheet/tab name appends to the spreadsheet's first sheet, so
+  // this works regardless of what that tab is named.
+  const url =
+    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}` +
+    `/values/${encodeURIComponent('A:I')}:append` +
+    `?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+
+  const sheetRes = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ values: [row] }),
+  });
+
+  if (!sheetRes.ok) {
+    const detail = await sheetRes.text().catch(() => '');
+    throw new Error(`Sheets API responded ${sheetRes.status}: ${detail}`);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { messages, recipientEmail, cc, companyName, jobDescription, jdAnalysis } = req.body ?? {};
+  const {
+    messages, recipientEmail, cc, companyName, jobDescription, jdAnalysis,
+    name, sessionLength, starterPromptsUsed,
+  } = req.body ?? {};
 
   // Optional CC — accept a single address or an array; ignore anything malformed.
   // Dedupe against the primary recipients (below) so we never list the same
@@ -371,10 +448,16 @@ no preamble, no markdown, no backticks:
 
 </div>`;
 
-  // Step 5: Send via Resend to both recipients
+  // Step 5: Send via Resend to both recipients.
+  // Send parameters are unchanged — only the control flow differs: rather than
+  // returning immediately, capture the outcome as `emailSent` so the Sheets log
+  // (Step 6) always runs, then return based on the email result alone.
   const subject = companyName
     ? `Your conversation with Jaxon Travis's AI — ${companyName}`
     : "Your conversation with Jaxon Travis's AI — Summary";
+
+  let emailSent = false;
+  let emailErrorResponse = null;
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -391,21 +474,55 @@ no preamble, no markdown, no backticks:
     // Resend v3+ returns { data, error } rather than throwing on API errors.
     if (result?.error) {
       console.error('[send-transcript] Resend API error:', JSON.stringify(result.error));
-      return res.status(500).json({
-        error: 'Failed to send transcript email',
-        detail: result.error,
-      });
+      emailErrorResponse = {
+        status: 500,
+        body: { error: 'Failed to send transcript email', detail: result.error },
+      };
+    } else {
+      emailSent = true;
     }
   } catch (err) {
     console.error(
       '[send-transcript] Resend threw:',
       JSON.stringify({ name: err?.name, message: err?.message, statusCode: err?.statusCode, cause: err?.cause }),
     );
-    return res.status(500).json({
-      error: 'Failed to send transcript email',
-      detail: { name: err?.name, message: err?.message, statusCode: err?.statusCode },
-    });
+    emailErrorResponse = {
+      status: 500,
+      body: {
+        error: 'Failed to send transcript email',
+        detail: { name: err?.name, message: err?.message, statusCode: err?.statusCode },
+      },
+    };
   }
 
+  // Step 6: Google Sheets transcript log — fully independent of the email above.
+  // Its own try/catch: a Sheets failure is logged but never alters the response,
+  // and the email outcome (emailSent) is recorded in column I either way.
+  try {
+    const fullTranscript = messages
+      .map(m => `${m.role === 'user' ? 'Recruiter' : "Jaxon's AI"}: ${extractText(m.content)}`)
+      .join('\n');
+
+    const jdTitle = jdAnalysis?.roleTitle?.trim() || 'No JD provided';
+
+    await logTranscriptToSheet([
+      new Date().toISOString(),                                                 // A: Timestamp
+      name || '',                                                               // B: Name
+      recipientEmail || '',                                                     // C: Email
+      companyName || '',                                                        // D: Company
+      jdTitle,                                                                  // E: JD Title
+      fullTranscript,                                                           // F: Full Transcript
+      Number.isFinite(sessionLength) ? sessionLength : '',                      // G: Session Length
+      Array.isArray(starterPromptsUsed) ? starterPromptsUsed.join(', ') : '',   // H: Starter Prompts Used
+      emailSent,                                                                // I: Email Sent
+    ]);
+  } catch (err) {
+    console.error('[send-transcript] Sheets logging failed (non-fatal):', err?.message ?? err);
+  }
+
+  // Return based on the email result only — the Sheets log never changes this.
+  if (emailErrorResponse) {
+    return res.status(emailErrorResponse.status).json(emailErrorResponse.body);
+  }
   return res.status(200).json({ ok: true });
 }

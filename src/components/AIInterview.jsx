@@ -125,6 +125,7 @@ export default function AIInterview() {
   const rafScheduledRef   = useRef(false); // rAF buffer: a flush is already queued for this frame
   const rafIdRef          = useRef(null);  // rAF buffer: id of the pending frame (for cancellation)
   const usedPromptsRef    = useRef(new Set()); // starter prompt labels already clicked
+  const sessionStartRef   = useRef(null);      // Date.now() at the first user message; basis for sessionLength
   const idleTimerRef      = useRef(null);
   const devKeyBufferRef   = useRef([]);    // dev gate bypass: rolling buffer of recent key presses
   const devKeyTimerRef    = useRef(null);  // dev gate bypass: clears the buffer after inactivity
@@ -295,12 +296,23 @@ export default function AIInterview() {
 
     trackEvent('transcript_sent', { trigger: isAutomatic ? 'auto' : 'manual' });
 
+    // Augment with send-time session metadata. sessionLength is measured now
+    // (not when the payload ref was last built) so the 10-min idle auto-send
+    // reports the true elapsed duration.
+    const body = {
+      ...payload,
+      sessionLength: sessionStartRef.current
+        ? Math.round((Date.now() - sessionStartRef.current) / 1000)
+        : 0,
+      starterPromptsUsed: Array.from(usedPromptsRef.current),
+    };
+
     setEmailStatus('sending');
     try {
       const res = await fetch('/api/send-transcript', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload),
+        body:    JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       transcriptSentRef.current = true;
@@ -331,8 +343,12 @@ export default function AIInterview() {
       cc:             trimmedCc && EMAIL_RE.test(trimmedCc) ? trimmedCc : undefined,
       companyName:    company  || undefined,
       jobDescription: jobText  || undefined,
+      // Carried so the transcript Sheets log can fill the Name (col B) and parsed
+      // JD Title (col E) columns; both are omitted when empty/unanalyzed.
+      name:           name     || undefined,
+      jdAnalysis:     jdAnalysis ?? undefined,
     };
-  }, [chatOpen, hasRealUserMsg, messages, email, company, jobText, ccEmail]);
+  }, [chatOpen, hasRealUserMsg, messages, email, company, jobText, ccEmail, name, jdAnalysis]);
 
   // 10-minute idle timer — resets on every new message, cancels once transcript is sent
   useEffect(() => {
@@ -348,9 +364,16 @@ export default function AIInterview() {
       if (transcriptSentRef.current) return;
       const payload = latestPayloadRef.current;
       if (!payload) return;
+      const body = {
+        ...payload,
+        sessionLength: sessionStartRef.current
+          ? Math.round((Date.now() - sessionStartRef.current) / 1000)
+          : 0,
+        starterPromptsUsed: Array.from(usedPromptsRef.current),
+      };
       navigator.sendBeacon(
         '/api/send-transcript',
-        new Blob([JSON.stringify(payload)], { type: 'application/json' }),
+        new Blob([JSON.stringify(body)], { type: 'application/json' }),
       );
     }
     window.addEventListener('pagehide',     handleUnload);
@@ -694,6 +717,9 @@ export default function AIInterview() {
     setIsScrolledUp(false);
     const text = raw.trim();
     if (!text || isStreaming) return;
+    // Start the session clock on the first real user message — the basis for the
+    // sessionLength reported with the transcript.
+    if (sessionStartRef.current === null) sessionStartRef.current = Date.now();
     setChatInput('');
 
     const userMsg    = { role: 'user', content: text };
@@ -914,6 +940,12 @@ export default function AIInterview() {
             </form>
             )}
           </div>
+
+          <p className={styles.inputDisclaimer}>
+            This chat is AI-powered and may occasionally make errors. I've trained it
+            carefully on my background, but please verify any specific claims directly
+            with me.
+          </p>
 
           {hasRealUserMsg && (
             <div className={styles.transcriptBar}>
