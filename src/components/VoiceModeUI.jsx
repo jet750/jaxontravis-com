@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 /**
@@ -8,6 +9,7 @@ import { motion } from 'framer-motion';
  * Props:
  *   isListening, isSpeaking, voiceSupported, transcript, isStreaming (booleans/string)
  *   onStartListening, onStopListening, onStopSpeaking, onHearFullResponse (functions)
+ *   onExitVoiceMode (function, required) — leave voice mode, returning to text input
  *   hasLastResponse (boolean) — a prior AI answer exists to replay in full
  *
  * The mic button toggles: tap to start, tap again (onStopListening) to send.
@@ -82,8 +84,23 @@ export default function VoiceModeUI({
   onStopListening,
   onStopSpeaking,
   onHearFullResponse,
+  onExitVoiceMode,
   hasLastResponse = false,
 }) {
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Only treat isSpeaking as blocking after the component has been mounted for
+  // 500ms — avoids stale TTS state on mobile wedging the mic shut on first load.
+  const [speakingSettled, setSpeakingSettled] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSpeakingSettled(true), 500);
+    return () => clearTimeout(t);
+  }, []);
+
   // Mic-permission denial after entering voice mode. VoiceModeUI only renders
   // inside an active voice session (which requires support at activation), so a
   // false here means access was revoked — never the initial-unsupported case.
@@ -103,11 +120,32 @@ export default function VoiceModeUI({
         >
           Microphone access denied — enable in browser settings to use voice mode
         </p>
+        {/* Always give a way out — never strand the user in broken voice mode. */}
+        <button
+          type="button"
+          onClick={onExitVoiceMode}
+          style={{
+            background:    'transparent',
+            border:        '1px solid rgba(255,255,255,0.12)',
+            borderRadius:  '20px',
+            color:         'rgba(255,255,255,0.4)',
+            fontFamily:    SANS,
+            fontSize:      '11px',
+            padding:       '6px 14px',
+            cursor:        'pointer',
+            marginTop:     '8px',
+            minHeight:     '44px',
+            WebkitTapHighlightColor: 'transparent',
+            touchAction:   'manipulation',
+          }}
+        >
+          ← Return to text mode
+        </button>
       </div>
     );
   }
 
-  const micDisabled = isStreaming || isSpeaking;
+  const micDisabled = isStreaming || (speakingSettled && isSpeaking);
 
   const micBg = micDisabled
     ? 'rgba(255,255,255,0.04)'
@@ -163,6 +201,8 @@ export default function VoiceModeUI({
           display:        'flex',
           alignItems:     'center',
           justifyContent: 'center',
+          WebkitTapHighlightColor: 'transparent',
+          touchAction:    'manipulation',
         }}
       >
         {isListening && (
@@ -183,6 +223,15 @@ export default function VoiceModeUI({
         <button
           type="button"
           onClick={isListening ? onStopListening : onStartListening}
+          onTouchEnd={(e) => {
+            e.preventDefault(); // prevent ghost click
+            if (micDisabled) return;
+            if (isListening) {
+              onStopListening();
+            } else {
+              onStartListening();
+            }
+          }}
           disabled={micDisabled}
           aria-label={isListening ? 'Tap to stop and send' : 'Tap to speak'}
           style={{
@@ -198,6 +247,10 @@ export default function VoiceModeUI({
             padding:        0,
             cursor:         micDisabled ? 'not-allowed' : 'pointer',
             transition:     'background 0.2s ease, border-color 0.2s ease',
+            WebkitTapHighlightColor: 'transparent',
+            touchAction:    'manipulation',
+            userSelect:     'none',
+            WebkitUserSelect: 'none',
           }}
         >
           {isListening
@@ -267,6 +320,46 @@ export default function VoiceModeUI({
           ▶ Hear full response
         </button>
       )}
+
+      {/* Always-visible exit. Silences TTS, then hands control back to text mode.
+          We deliberately do NOT call onStopListening here: the hook's stopListening
+          fires onTranscriptComplete (→ sendMessage), and exit must abandon the
+          in-progress transcript, not send it. Recognition teardown is handled by
+          the hook's voiceModeActive→false effect (stopRecognition, no send). */}
+      <button
+        type="button"
+        onClick={() => {
+          if (onStopSpeaking) onStopSpeaking();
+          onExitVoiceMode();
+        }}
+        style={{
+          background:    'transparent',
+          border:        '1px solid rgba(255,255,255,0.12)',
+          borderRadius:  '20px',
+          color:         'rgba(255,255,255,0.4)',
+          fontFamily:    SANS,
+          fontSize:      '11px',
+          letterSpacing: '0.06em',
+          padding:       '6px 14px',
+          cursor:        'pointer',
+          marginTop:     '4px',
+          transition:    'color 0.2s ease, border-color 0.2s ease',
+          WebkitTapHighlightColor: 'transparent',
+          touchAction:   'manipulation',
+          minHeight:     '44px', // mobile touch target
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+        }}
+        aria-label="Return to text mode"
+      >
+        ← Return to text mode
+      </button>
     </div>
   );
 }

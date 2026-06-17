@@ -732,6 +732,7 @@ export default function AIInterview() {
                 onStopListening={stopListening}
                 onStopSpeaking={stopSpeaking}
                 onHearFullResponse={handleHearFullResponse}
+                onExitVoiceMode={handleToggleVoiceMode}
                 hasLastResponse={Boolean(lastAIMessageShort)}
               />
             ) : (
