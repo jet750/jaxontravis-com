@@ -11,8 +11,15 @@ function hpColor(frac) {
   return mixHex(COLORS.crimson, COLORS.ember, frac / 0.5);
 }
 
+// Combo indicator styling per multiplier threshold.
+const COMBO_STYLES = {
+  1.2: { label: '×1.2 COMBO', color: COLORS.gold },
+  1.5: { label: '×1.5 COMBO', color: COLORS.ember },
+  2.0: { label: '×2.0 COMBO', color: COLORS.crimson },
+};
+
 export const HUD = {
-  draw(ctx, { bee, banked, activePowerUp, w, h, isMobile }) {
+  draw(ctx, { bee, banked, activePowerUp, w, h, isMobile, combo, rainActive, t = 0 }) {
     // ---- Health bar (top-left) ----
     const hx = 16;
     const hy = 26;
@@ -39,11 +46,12 @@ export const HUD = {
 
     // ---- Pollen counter (top-center) ----
     const cx = w / 2;
-    const val = bee.carriedValue;
+    const totalCarried = bee.capacityUsed;
+    const maxCarry = bee.maxCarry;
     let pollenColor = COLORS.gold;
-    if (val > 12) pollenColor = COLORS.crimson;
-    else if (val > 10) pollenColor = COLORS.ember;
-    text(ctx, `${val} / 10`, cx, 22, {
+    if (totalCarried > maxCarry) pollenColor = COLORS.crimson;
+    else if (totalCarried === maxCarry) pollenColor = COLORS.ember;
+    text(ctx, `${totalCarried} / ${maxCarry}`, cx, 22, {
       fontStr: font(FONTS.mono, 14, '700'),
       color: pollenColor,
     });
@@ -52,11 +60,36 @@ export const HUD = {
       color: COLORS.ink,
       alpha: 0.8,
     });
-    if (bee.overCapacity) {
-      text(ctx, 'OVERLOADED — sting disabled', cx, 56, {
-        fontStr: font(FONTS.body, 10, '600'),
-        color: COLORS.crimson,
+
+    // ---- Stacked warnings / status, directly below the capacity counter ----
+    let warnY = 56;
+    if (totalCarried > maxCarry) {
+      // Overcapacity: amber text warning (no sprite tint).
+      text(ctx, '⚠ ATTACK DISABLED — OVERCAPACITY', cx, warnY, {
+        fontStr: font(FONTS.body, 11),
+        color: COLORS.gold,
       });
+      warnY += 16;
+    }
+    if (rainActive) {
+      text(ctx, '🌧 STORM — DMG ×1.5', cx, warnY, {
+        fontStr: font(FONTS.body, 11),
+        color: COLORS.gold,
+      });
+      warnY += 16;
+    }
+    if (combo && combo.count >= 5) {
+      const style = COMBO_STYLES[combo.multiplier] || COMBO_STYLES[1.2];
+      // Pulse scale 1.0 → 1.08 on a 0.4s cycle.
+      const scale = 1.04 + 0.04 * Math.sin(t * 5 * Math.PI);
+      ctx.save();
+      ctx.translate(cx, warnY + 4);
+      ctx.scale(scale, scale);
+      text(ctx, style.label, 0, 0, {
+        fontStr: font(FONTS.mono, 13, '700'),
+        color: style.color,
+      });
+      ctx.restore();
     }
 
     // ---- Active power-up slot (top-right) ----

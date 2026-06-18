@@ -22,6 +22,12 @@ export class Patroller extends Enemy {
     this._chargeTraveled = 0;
   }
 
+  respawn() {
+    super.respawn();
+    this._chargeTraveled = 0;
+    this._orbitAngle = Math.random() * Math.PI * 2;
+  }
+
   behave(dt, env, slow) {
     const bee = env.bee;
     const dist = distance(this, bee);

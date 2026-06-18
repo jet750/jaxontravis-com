@@ -1,16 +1,34 @@
 // Power-up plants. The bee lands by hovering within 40px and holding still for
 // 0.5s; the effect fires on launch (main.js drives the landing handshake and
-// applies the active effect). Each plant recharges 30s after use.
+// applies the active effect). Timed plants recharge 30s after use.
 //
-// Phase 1 species: Sunflower, Lavender, Foxglove.
-// TODO(Phase 2): additional species + plant tiers.
+// Phase 1 species: Sunflower, Lavender, Foxglove (timed buffs).
+// Phase 2 rare species: Moonflower, Ironweed — instant, one-use, wilt when spent.
 
-import { COLORS, drawFlower, rgba, drawPulseRing } from '../../utils/renderer.js';
+import { COLORS, drawFlower, rgba, drawPulseRing, mixHex } from '../../utils/renderer.js';
 
 export const POWERUP_DEFS = {
   sunflower: { color: COLORS.gold, duration: 15, label: 'Sunflower' },
   lavender: { color: COLORS.lavender, duration: 12, label: 'Lavender' },
   foxglove: { color: COLORS.crimson, duration: 10, label: 'Foxglove' },
+  moonflower: {
+    id: 'moonflower',
+    label: 'Moonflower',
+    color: '#B8A0D4', // pale violet
+    duration: 0, // instant use, no duration
+    rarity: 'rare',
+    oneUse: true, // does not recharge
+    effect: 'instant_store', // opens hive store overlay without returning to hive
+  },
+  ironweed: {
+    id: 'ironweed',
+    label: 'Ironweed',
+    color: '#6B8B3A', // olive green
+    duration: 0, // instant use
+    rarity: 'rare',
+    oneUse: true,
+    effect: 'full_heal', // restores hp to maxHp immediately
+  },
 };
 
 const TRIGGER_RADIUS = 40;
@@ -24,14 +42,19 @@ export class PowerUpPlant {
     this.type = type;
     this.color = def.color;
     this.duration = def.duration;
+    this.effect = def.effect || null;
+    this.rarity = def.rarity || 'common';
+    this.oneUse = !!def.oneUse;
     this.radius = TRIGGER_RADIUS;
     this.kind = 'plant';
 
     this.available = true;
+    this.spent = false; // one-use plants flip this permanently after activation
     this.rechargeTimer = 0;
   }
 
   update(dt) {
+    if (this.spent) return; // wilted one-use plants never recharge
     if (!this.available) {
       this.rechargeTimer -= dt;
       if (this.rechargeTimer <= 0) {
@@ -43,6 +66,12 @@ export class PowerUpPlant {
 
   /** Called by main when the effect launches. */
   consume() {
+    if (this.oneUse) {
+      // Spent for the rest of the run: wilts, no pulse, no recharge.
+      this.spent = true;
+      this.available = false;
+      return;
+    }
     this.available = false;
     this.rechargeTimer = RECHARGE;
   }
@@ -50,6 +79,12 @@ export class PowerUpPlant {
   draw(ctx, t) {
     ctx.save();
     ctx.translate(this.x, this.y);
+
+    if (this.spent) {
+      this._drawWilted(ctx);
+      ctx.restore();
+      return;
+    }
 
     if (this.available) {
       drawPulseRing(ctx, 0, 0, 26, this.color, t);
@@ -75,8 +110,77 @@ export class PowerUpPlant {
       case 'foxglove':
         this._drawFoxglove(ctx);
         break;
+      case 'moonflower':
+        drawFlower(ctx, 20, 8, this.color, '#F0EBE2');
+        break;
+      case 'ironweed':
+        this._drawIronweed(ctx);
+        break;
       default:
         break;
+    }
+    ctx.restore();
+  }
+
+  /** Drooped, desaturated stem drawn once a one-use plant has been spent. */
+  _drawWilted(ctx) {
+    const gray = '#8A847C';
+    ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = '#5A554E';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    // drooping stem curving over to one side
+    ctx.beginPath();
+    ctx.moveTo(0, 30);
+    ctx.quadraticCurveTo(0, 8, 12, 6);
+    ctx.stroke();
+    // wilted head (desaturated, drooping)
+    ctx.fillStyle = gray;
+    ctx.strokeStyle = rgba(COLORS.ink, 0.4);
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+      ctx.save();
+      ctx.translate(12, 6);
+      ctx.rotate(0.5 + i * 0.5);
+      ctx.beginPath();
+      ctx.ellipse(0, 6, 3, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /** Olive-green ironweed: a small cluster of star florets atop the stem. */
+  _drawIronweed(ctx) {
+    ctx.save();
+    ctx.translate(0, -2);
+    ctx.fillStyle = this.color;
+    ctx.strokeStyle = rgba(COLORS.ink, 0.5);
+    ctx.lineWidth = 1;
+    const spots = [
+      [0, -6],
+      [-6, 0],
+      [6, 0],
+      [-3, 6],
+      [3, 6],
+    ];
+    for (const [sx, sy] of spots) {
+      ctx.save();
+      ctx.translate(sx, sy);
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(a) * 4, Math.sin(a) * 4);
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = this.color;
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(0, 0, 2, 0, Math.PI * 2);
+      ctx.fillStyle = mixHex(this.color, COLORS.ink, 0.3);
+      ctx.fill();
+      ctx.restore();
     }
     ctx.restore();
   }

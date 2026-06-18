@@ -5,11 +5,13 @@
 //   - Damage only through a telegraphed cycle: WINDUP → ATTACKING → COOLDOWN.
 //   - Always faces its direction of movement / its target.
 //
-// Tier damage is a fraction of the player's max HP:
-//   T1 = 0.10, T2 = 0.18, T3 = 0.30.
+// Tier damage is a FLAT HP value applied to the player:
+//   T1 = 15, T2 = 25, T3 = 35.
+// The Bee applies damage-reduction and weather multipliers on receipt.
+// (The Carnivorous Plant is a special case — see CarnivorousPlant.js.)
 //
 // Subclasses implement behave(dt, env); the base handles fsm bookkeeping,
-// death, world clamping, and safe-pad avoidance.
+// death, world clamping, safe-pad avoidance, and respawn().
 
 import { StateMachine } from '../../engine/StateMachine.js';
 import {
@@ -21,7 +23,7 @@ import {
   randomBetween,
 } from '../../utils/math.js';
 
-export const TIER_DAMAGE = { 1: 0.1, 2: 0.18, 3: 0.3 };
+export const TIER_DAMAGE = { 1: 15, 2: 25, 3: 35 };
 
 export class Enemy {
   constructor(x, y, opts = {}) {
@@ -38,6 +40,7 @@ export class Enemy {
     this.dead = false;
     this.deathTimer = 0; // fades out after dying
     this._didHit = false; // one damage application per attack cycle
+    this.killedAtReturn = null; // hive-return index when killed (respawn bookkeeping)
 
     this.fsm = new StateMachine('IDLE', {
       IDLE: {},
@@ -69,9 +72,25 @@ export class Enemy {
     }
   }
 
-  /** True once the death fade is complete (main removes it). */
+  /** True once the death fade is complete. */
   get expired() {
     return this.dead && this.deathTimer > 0.6;
+  }
+
+  /**
+   * Restore this enemy to its original spawn state. Called by main when an
+   * enemy has been dead for RESPAWN_AFTER_RETURNS hive returns. Subclasses
+   * override to also reset their per-instance animation/attack fields.
+   */
+  respawn() {
+    this.x = this.spawnX;
+    this.y = this.spawnY;
+    this.hp = this.maxHp;
+    this.dead = false;
+    this.deathTimer = 0;
+    this.killedAtReturn = null;
+    this._didHit = false;
+    this.fsm.set('IDLE', this, true);
   }
 
   // ---- shared movement helpers ----

@@ -19,6 +19,11 @@ export class Seeker extends Enemy {
     this._lungeTraveled = 0;
   }
 
+  respawn() {
+    super.respawn();
+    this._lungeTraveled = 0;
+  }
+
   behave(dt, env, slow) {
     const bee = env.bee;
     const dist = distance(this, bee);

@@ -1,6 +1,8 @@
 // T3 Carnivorous Plant — stationary pitcher plant. Instant snap, no windup.
+// Snap deals 50% of the player's CURRENT max HP (a special-case flat value).
 // Bee dash does only 10 damage (cannot be killed by the Bee alone).
-// TODO(Phase 2): Locust unit deals full damage and can clear these.
+// The Locust is the only craft that can kill it: full 80 damage, 2 hits
+// (160 HP). Moths cannot damage it at all (immuneToMoth).
 
 import { Enemy } from './Enemy.js';
 import { COLORS, rgba } from '../../utils/renderer.js';
@@ -12,9 +14,16 @@ const DASH_DAMAGE_CAP = 10;
 
 export class CarnivorousPlant extends Enemy {
   constructor(x, y) {
-    super(x, y, { tier: 3, hp: 80, radius: 25 });
+    super(x, y, { tier: 3, hp: 160, radius: 25 });
     this.facing = -Math.PI / 2; // mouth opens upward, never rotates
     this._openness = 1; // 1 open, 0 snapped shut
+    this.immuneToMoth = true; // Moth consume ignores static plant enemies
+  }
+
+  respawn() {
+    super.respawn();
+    this.facing = -Math.PI / 2;
+    this._openness = 1;
   }
 
   // Bee can only chip 10 off — never lethal.
@@ -51,7 +60,7 @@ export class CarnivorousPlant extends Enemy {
       case 'ATTACKING':
         this._openness = Math.max(0, this._openness - dt * 12);
         if (!this._didHit) {
-          bee.takeDamage(this.damage); // T3 = 30%
+          bee.takeDamage(Math.floor(bee.maxHp * 0.5)); // special case: 50% of current max HP
           this._didHit = true;
         }
         if (s.elapsed(0.2)) s.set('COOLDOWN', this);

@@ -1,8 +1,10 @@
 // The Meadow biome: 3200×3200 world. Owns terrain rendering, environmental
-// hazards (wind / webs / thorns), the central hive, and the two safe pads.
+// hazards (wind / webs / thorns), the central hive, the two safe pads, and the
+// random rain weather event (storm → ×1.5 damage; see main.js for the modifier).
 // Exposes query helpers consumed by the Bee and enemies.
 //
-// TODO(Phase 2): Forest / Garden / Greenhouse biomes, rain events.
+// TODO(Phase 3): Forest / Garden / Greenhouse biomes (rain is the primary
+// hazard in Garden/Greenhouse).
 
 import {
   COLORS,
@@ -17,6 +19,7 @@ import { makeRng, clamp, distance } from '../utils/math.js';
 
 const WORLD_SIZE = 3200;
 const CELL = 800; // 4×4 conceptual grid
+const RAIN_WARNING = 3.0; // seconds of cloud-shadow telegraph before a storm
 const WIND_FORCE = 80;
 const WIND_ON = 5;
 const WIND_OFF = 10;
@@ -49,6 +52,17 @@ export class Meadow {
       { x: 2600, y: 1500, radius: 70 },
       { x: 2100, y: 2650, radius: 70 },
     ];
+
+    // Rain weather event. `active` is read by main.js to apply the ×1.5
+    // storm-damage modifier; the warning phase telegraphs the incoming storm.
+    this.rain = {
+      active: false,
+      timer: 0,
+      nextTrigger: 45 + Math.random() * 60, // first rain between 45–105s into a run
+      duration: 0,
+      warningActive: false,
+      warningTimer: 0,
+    };
 
     // Thorns: solid rectangular blockers.
     this.thorns = [
@@ -96,6 +110,84 @@ export class Meadow {
 
   update(dt) {
     this.time += dt;
+    this._updateRain(dt);
+  }
+
+  // ---- rain weather cycle ----
+  _updateRain(dt) {
+    const r = this.rain;
+    if (r.active) {
+      r.duration -= dt;
+      if (r.duration <= 0) {
+        r.active = false;
+        r.nextTrigger = 60 + Math.random() * 90; // next event 60–150s away
+      }
+      return;
+    }
+    if (r.warningActive) {
+      r.warningTimer -= dt;
+      if (r.warningTimer <= 0) {
+        r.warningActive = false;
+        r.active = true;
+        r.duration = 15 + Math.random() * 5; // storm lasts 15–20s
+      }
+      return;
+    }
+    r.nextTrigger -= dt;
+    if (r.nextTrigger <= 0) {
+      r.warningActive = true;
+      r.warningTimer = RAIN_WARNING; // 3s telegraph before the storm
+    }
+  }
+
+  /**
+   * Screen-space weather overlay (NOT camera-transformed). Drawn by main after
+   * the world, before the HUD: a cloud-shadow during the warning phase, then
+   * animated rain streaks + a cool wash while the storm is active.
+   */
+  drawWeather(ctx, w, h) {
+    const r = this.rain;
+
+    if (r.warningActive) {
+      // Darkening cloud shadow sliding in from the top (opacity 0 → 0.25).
+      const progress = 1 - r.warningTimer / RAIN_WARNING;
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, `rgba(40, 44, 52, ${0.25 * progress})`);
+      grad.addColorStop(1, 'rgba(40, 44, 52, 0)');
+      ctx.save();
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+      return;
+    }
+
+    if (r.active) {
+      ctx.save();
+      // persistent cool overlay
+      ctx.fillStyle = 'rgba(100, 120, 140, 0.15)';
+      ctx.fillRect(0, 0, w, h);
+
+      // animated streaks: thin lines angled ~15° right, falling at ~300px/s
+      const angle = (15 * Math.PI) / 180;
+      const dx = Math.sin(angle);
+      const dy = Math.cos(angle);
+      const t = this.time;
+      const speed = 300;
+      ctx.strokeStyle = 'rgba(180, 200, 220, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < 40; i++) {
+        const len = 12 + ((i * 37) % 9); // 12–20px
+        const baseX = ((i * 89) % 100) / 100 * (w + 40) - 20;
+        const phase = ((i * 53) % 100) / 100;
+        const yy = ((t * speed + phase * (h + 40)) % (h + 40)) - 20;
+        const xx = baseX + yy * dx * 0.2;
+        ctx.moveTo(xx, yy);
+        ctx.lineTo(xx + dx * len, yy + dy * len);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // ---- queries ----

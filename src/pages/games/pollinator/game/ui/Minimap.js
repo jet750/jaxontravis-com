@@ -1,12 +1,58 @@
-// 120×120 inset minimap of the full 3200×3200 world.
-// Shows player, hive, and safe pads.
+// Inset minimap of the full 3200×3200 world.
+// Shows player, hive, and safe pads, with a fog-of-war layer that hides
+// unexplored regions and reveals them as the player travels.
 //
-// TODO(Phase 2): fog-of-war reveal (deferred — Phase 1 shows the full map).
+// The fog is composited on an offscreen canvas: we fill it solid, then punch
+// circular reveal holes with `destination-out`, then draw the fogged layer over
+// the base map. This honours the "fog rect + destination-out reveal" technique
+// without erasing the live game world drawn beneath the minimap.
 
 import { COLORS, rgba, panel } from '../utils/renderer.js';
 
-export const Minimap = {
-  SIZE: 120,
+const WORLD_SIZE = 3200;
+const TRACK_MIN_DIST = 50; // only record a new point after moving this far (world px)
+const REVEAL_RADIUS = 14; // minimap px (~370 world px of visibility)
+const FOG_COLOR = 'rgba(28, 18, 9, 0.82)';
+
+export class Minimap {
+  static SIZE = 120;
+
+  constructor() {
+    this.fogVisited = []; // array of {x, y} world coordinates the player has visited
+    this._last = null; // last recorded point (throttling)
+    this._fog = null; // offscreen fog canvas (lazy)
+    this._fogSize = 0;
+  }
+
+  /** Replace the visited set (e.g. when restoring from saved progress). */
+  loadFog(points) {
+    this.fogVisited = Array.isArray(points)
+      ? points.filter((p) => p && typeof p.x === 'number' && typeof p.y === 'number')
+      : [];
+    this._last = null;
+  }
+
+  /** Record the player's world position, throttled to keep the array small. */
+  trackPosition(x, y) {
+    if (this._last) {
+      const dx = x - this._last.x;
+      const dy = y - this._last.y;
+      if (dx * dx + dy * dy < TRACK_MIN_DIST * TRACK_MIN_DIST) return;
+    }
+    const point = { x, y };
+    this.fogVisited.push(point);
+    this._last = point;
+  }
+
+  _ensureFogCanvas(size) {
+    if (!this._fog || this._fogSize !== size) {
+      this._fog = document.createElement('canvas');
+      this._fog.width = size;
+      this._fog.height = size;
+      this._fogSize = size;
+    }
+    return this._fog;
+  }
 
   draw(ctx, { bee, meadow, x, y, size = 120 }) {
     const scale = size / meadow.WORLD_SIZE;
@@ -24,6 +70,7 @@ export const Minimap = {
     ctx.rect(x, y, size, size);
     ctx.clip();
 
+    // ---- base map (drawn first; fog is composited on top) ----
     // pads
     for (const p of meadow.pads) {
       ctx.beginPath();
@@ -48,7 +95,23 @@ export const Minimap = {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // player gold dot
+    // ---- fog layer (offscreen): solid fog with reveal holes punched out ----
+    const fog = this._ensureFogCanvas(size);
+    const fctx = fog.getContext('2d');
+    fctx.clearRect(0, 0, size, size);
+    fctx.fillStyle = FOG_COLOR;
+    fctx.fillRect(0, 0, size, size);
+    fctx.save();
+    fctx.globalCompositeOperation = 'destination-out';
+    for (const p of this.fogVisited) {
+      fctx.beginPath();
+      fctx.arc(p.x * scale, p.y * scale, REVEAL_RADIUS, 0, Math.PI * 2);
+      fctx.fill();
+    }
+    fctx.restore();
+    ctx.drawImage(fog, x, y);
+
+    // player gold dot (always visible, above the fog)
     ctx.beginPath();
     ctx.arc(x + bee.x * scale, y + bee.y * scale, 3, 0, Math.PI * 2);
     ctx.fillStyle = COLORS.gold;
@@ -59,5 +122,7 @@ export const Minimap = {
 
     ctx.restore();
     ctx.restore();
-  },
-};
+  }
+}
+
+export { WORLD_SIZE };

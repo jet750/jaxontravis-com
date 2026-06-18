@@ -10,7 +10,6 @@ import { StateMachine } from '../engine/StateMachine.js';
 import {
   COLORS,
   rgba,
-  mixHex,
 } from '../utils/renderer.js';
 import {
   clamp,
@@ -36,8 +35,13 @@ const BASE_ATTACK = 34;
 const MAX_CARRY = 10;
 const HARD_CAP = 15;
 
-// Enemy base-damage is expressed as a fraction of the player's max HP; the
-// bee converts it through damage-reduction upgrades and the foxglove shield.
+const DR_PER_LEVEL = 0.05; // damage reduction = ×0.95 per level (stacking)
+const THORN_DAMAGE = 8; // flat contact damage from thorn edges
+
+// Enemy damage is now a FLAT value (T1=15, T2=25, T3=35); the bee converts it
+// through damage-reduction upgrades (×0.95ⁿ), the active weather multiplier
+// (storm ×1.5), and the foxglove shield. See main.js / Enemy.js for the source
+// flat values.
 export class Bee {
   constructor(x, y, upgrades) {
     this.x = x;
@@ -47,20 +51,27 @@ export class Bee {
     this.vy = 0;
     this.facing = -Math.PI / 2; // pointing up
 
+    this.craftType = 'bee';
+
     // --- upgrades ---
     this.maxHpLevel = upgrades.maxHp || 0;
     this.drLevel = upgrades.damageReduction || 0;
     this.attackLevel = upgrades.attackBoost || 0;
-    this.maxHp = 100 + 20 * this.maxHpLevel;
+    this.maxHp = 100 + 10 * this.maxHpLevel; // +10 per level → cap 150 at Lv5
     this.hp = this.maxHp;
     this.healingItems = upgrades.healingItems || 0;
 
     // --- pollen ---
     this.carried = { common: 0, uncommon: 0, rare: 0 };
+    this.carriedBonus = 0; // extra value earned via combo multiplier (banked, not capacity)
+    this.collectedCount = 0; // monotonic counter; main reads its delta for combo tracking
+    this.maxCarry = MAX_CARRY; // capacity metric (weighted value) — shared HUD reads this
 
-    // --- modifiers set each frame by main (power-ups) ---
+    // --- modifiers set each frame by main (power-ups / weather / combo) ---
     this.collectionRadius = 60;
     this.damageImmune = false; // foxglove
+    this.weatherMultiplier = 1; // storm ×1.5 (set by main each frame)
+    this.comboMultiplier = 1; // combo pollen-value multiplier (set by main each frame)
 
     // --- timers ---
     this.invincibleTimer = 0;
@@ -90,16 +101,43 @@ export class Bee {
   }
 
   // ---- derived getters ----
+  /** Raw weighted value of carried pollen (capacity metric). */
   get carriedValue() {
     return this.carried.common * 1 + this.carried.uncommon * 3 + this.carried.rare * 5;
   }
 
+  /** Capacity usage shown in the HUD (weighted value for the bee). */
+  get capacityUsed() {
+    return this.carriedValue;
+  }
+
+  /** Total bankable value including combo bonus (craft interface). */
+  getCarriedTotal() {
+    return this.carriedValue + this.carriedBonus;
+  }
+
   get overCapacity() {
-    return this.carriedValue > MAX_CARRY;
+    return this.carriedValue > this.maxCarry;
   }
 
   get attackDamage() {
-    return BASE_ATTACK * Math.pow(1.05, this.attackLevel);
+    // +0.05 per level, linear, capped at ×1.25 (Lv5).
+    return BASE_ATTACK * Math.min(1.25, 1 + 0.05 * this.attackLevel);
+  }
+
+  /** Whether there is room to begin collecting one pollen of `type`. */
+  canCollect(type) {
+    const value = type === 'rare' ? 5 : type === 'uncommon' ? 3 : 1;
+    return this.carriedValue + value <= HARD_CAP;
+  }
+
+  /** Recompute upgrade-derived stats from the saved upgrades object. */
+  applyUpgrades(upgrades) {
+    this.maxHpLevel = upgrades.maxHp || 0;
+    this.drLevel = upgrades.damageReduction || 0;
+    this.attackLevel = upgrades.attackBoost || 0;
+    this.maxHp = 100 + 10 * this.maxHpLevel;
+    this.hp = Math.min(this.hp, this.maxHp);
   }
 
   isInvincible() {
@@ -125,40 +163,53 @@ export class Bee {
     const value = type === 'rare' ? 5 : type === 'uncommon' ? 3 : 1;
     if (this.carriedValue + value > HARD_CAP) return false;
     this.carried[type] += 1;
+    this.collectedCount += 1;
+    // Combo multiplier adds bonus value (banked, does not consume capacity).
+    if (this.comboMultiplier > 1) {
+      this.carriedBonus += Math.round(value * this.comboMultiplier) - value;
+    }
     return true;
   }
 
   clearCarried() {
     this.carried = { common: 0, uncommon: 0, rare: 0 };
+    this.carriedBonus = 0;
   }
 
   // ---- health ----
-  /** Damage from an enemy/hazard, expressed as a fraction of max HP. */
-  takeDamage(fraction, { ignoreIFrames = false, applyIFrame = true } = {}) {
+  /**
+   * Flat damage from an enemy. `amount` is a flat HP value (T1=15, T2=25,
+   * T3=35, etc). Damage reduction (×0.95ⁿ) and the active weather multiplier
+   * (storm ×1.5) are applied before the hit lands.
+   */
+  takeDamage(amount, { ignoreIFrames = false, applyIFrame = true } = {}) {
     if (this.isDead()) return;
     if (this.damageImmune) return; // foxglove
     if (!ignoreIFrames && this.invincibleTimer > 0) return;
-    const reduction = Math.pow(0.95, this.drLevel);
-    const amount = this.maxHp * fraction * reduction;
-    this.hp = Math.max(0, this.hp - amount);
+    const drMultiplier = Math.pow(1 - DR_PER_LEVEL, this.drLevel); // 0.95ⁿ
+    const finalDamage = Math.round(amount * drMultiplier * this.weatherMultiplier);
+    this.hp = Math.max(0, this.hp - finalDamage);
     if (applyIFrame) this.invincibleTimer = Math.max(this.invincibleTimer, HIT_IFRAME);
     if (this.hp <= 0) {
       this.fsm.set('DEAD', this);
     }
   }
 
-  /** Flat-fraction damage that bypasses i-frames (thorn edge contact). */
-  takeFlatDamage(fraction) {
+  /** Flat damage that bypasses i-frames (thorn edge contact). */
+  takeFlatDamage(amount) {
     if (this.isDead() || this.damageImmune) return;
-    const reduction = Math.pow(0.95, this.drLevel);
-    this.hp = Math.max(0, this.hp - this.maxHp * fraction * reduction);
+    const drMultiplier = Math.pow(1 - DR_PER_LEVEL, this.drLevel);
+    this.hp = Math.max(0, this.hp - Math.round(amount * drMultiplier * this.weatherMultiplier));
     if (this.hp <= 0) this.fsm.set('DEAD', this);
   }
 
-  /** Regenerate a fraction of max HP per second (safe pads). */
-  regenerate(fractionPerSecond, dt) {
+  /** Heal up to 50% of max HP while resting on a safe pad. */
+  padRegen(dt) {
     if (this.isDead()) return;
-    this.hp = Math.min(this.maxHp, this.hp + this.maxHp * fractionPerSecond * dt);
+    const cap = this.maxHp * 0.5;
+    if (this.hp >= cap) return; // pads only restore to half — full heal is hive-only
+    const rate = (this.maxHp * 0.5) / 3; // HP per second → reaches 50% over 3s
+    this.hp = Math.min(cap, this.hp + rate * dt);
   }
 
   useHealingItem() {
@@ -306,7 +357,7 @@ export class Bee {
       nx = res.x;
       ny = res.y;
       if (res.damaged && this.thornHitCooldown <= 0) {
-        this.takeFlatDamage(0.05);
+        this.takeFlatDamage(THORN_DAMAGE);
         this.thornHitCooldown = 0.6;
       }
     }
@@ -347,8 +398,8 @@ export class Bee {
     ctx.translate(this.x, this.y);
     ctx.rotate(this.facing + Math.PI / 2); // sprite drawn pointing up
 
-    const overcap = this.overCapacity;
-    const bodyColor = overcap ? mixHex(COLORS.gold, COLORS.ember, 0.5) : COLORS.gold;
+    // Overcapacity is surfaced as a HUD warning (see HUD.js), not a sprite tint.
+    const bodyColor = COLORS.gold;
 
     // Foxglove shield aura.
     if (this.damageImmune) {

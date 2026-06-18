@@ -22,6 +22,14 @@ export class Frog extends Enemy {
     this._target = null; // captured strike point
   }
 
+  respawn() {
+    super.respawn();
+    this.facing = -Math.PI / 2;
+    this._swell = 1;
+    this._tongue = 0;
+    this._target = null;
+  }
+
   behave(dt, env, slow) {
     const bee = env.bee;
     const dist = distance(this, bee);
