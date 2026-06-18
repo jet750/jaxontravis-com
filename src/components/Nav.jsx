@@ -50,7 +50,6 @@ const NAV_LINKS = [
   { path: '/photography',   label: 'JET Photography', accent: 'violet' },
   { path: '/about',         label: 'About',          accent: 'cerulean' },
   { path: '/work-samples',  label: 'Work Samples',   accent: 'gold' },
-  { path: '/games/pollinator', label: 'Great Pollinator', accent: 'botanical' },
 ];
 
 const SCROLL_THRESHOLD = 80;
