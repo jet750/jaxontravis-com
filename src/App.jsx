@@ -1,4 +1,4 @@
-import { lazy, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { MotionConfig, AnimatePresence } from 'framer-motion';
@@ -17,6 +17,7 @@ const BazaarBlendsPage = lazy(() => import('./pages/BazaarBlendsPage'));
 const PhotographyPage  = lazy(() => import('./pages/Photography'));
 const AboutPage        = lazy(() => import('./pages/AboutPage'));
 const WorkSamplesPage  = lazy(() => import('./pages/WorkSamplesPage'));
+const PollinatorPage   = lazy(() => import('./pages/games/pollinator/PollinatorPage'));
 
 initAnalytics();
 initGA4();
@@ -76,6 +77,11 @@ export default function App() {
             <Route path="/about"         element={<AboutPage />} />
             <Route path="/work-samples"  element={<WorkSamplesPage />} />
           </Route>
+          <Route path="/games/pollinator" element={
+            <Suspense fallback={<div style={{ background: '#141210', minHeight: '100vh' }} />}>
+              <PollinatorPage />
+            </Suspense>
+          } />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <RecruiterNudgeHost />
