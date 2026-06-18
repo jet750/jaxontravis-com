@@ -14,6 +14,7 @@ import { Meadow } from './world/Meadow.js';
 import { Bee } from './entities/Bee.js';
 import { Moth } from './entities/Moth.js';
 import { Locust } from './entities/Locust.js';
+import { Hornet } from './entities/Hornet.js';
 import { Seeker } from './entities/enemies/Seeker.js';
 import { Patroller } from './entities/enemies/Patroller.js';
 import { CarnivorousPlant } from './entities/enemies/CarnivorousPlant.js';
@@ -29,11 +30,14 @@ import { VirtualJoystick } from './ui/VirtualJoystick.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { GameOverScreen } from './ui/GameOverScreen.js';
 
+import { AudioManager } from './audio/AudioManager.js';
+import { NarrativeEngine, isBeneficialConsequence } from './narrative/NarrativeEngine.js';
+import { EventUI } from './ui/EventUI.js';
+
 import { loadProgress, saveProgress, resetProgress } from './utils/storage.js';
 import { makeRng, distance, clamp } from './utils/math.js';
+import { COLORS, FONTS, font, text } from './utils/renderer.js';
 
-const DESKTOP = { w: 900, h: 650 };
-const MOBILE = { w: 390, h: 700 };
 const MOBILE_BREAKPOINT = 768;
 
 const COMBO_WINDOW = 3.0; // seconds before a combo decays
@@ -63,9 +67,11 @@ export default class PollinatorGame {
     this.time = 0;
 
     this.isMobile = window.innerWidth < MOBILE_BREAKPOINT;
-    const dims = this.isMobile ? MOBILE : DESKTOP;
-    this.LW = dims.w;
-    this.LH = dims.h;
+    // Seed the logical size from the window so Camera/grid can be constructed.
+    // start() calls _resize() immediately, which corrects these to the exact
+    // canvas rect (which now respects safe-area insets via CSS dvh + env()).
+    this.LW = window.innerWidth;
+    this.LH = window.innerHeight;
     this.dpr = 1;
 
     this.progress = loadProgress();
@@ -78,6 +84,26 @@ export default class PollinatorGame {
     this.biomeSelect = new BiomeSelect();
     this.minimap = new Minimap();
     this.minimap.loadFog(this.progress.fog);
+
+    // Procedural audio. The AudioContext is created on the first user gesture
+    // (see the input handlers); until then every play call is a no-op.
+    this.audio = new AudioManager();
+    this._muteBtnRect = null; // set each HUD frame; hit-tested on pointer events
+
+    // Oregon-Trail-style AI narrative layer. The engine generates a field
+    // journal event via the serverless proxy while the player is in the hive;
+    // eventUI renders the choice overlay. Both reset each run (see newRun).
+    this.narrative = new NarrativeEngine();
+    this.eventUI = new EventUI();
+
+    // Narrative consequence modifiers (timed; neutral when their timer is ≤0).
+    this._pollenMultiplier = 1;
+    this._pollenModTimer = 0;
+    this._narrativeDmgMult = 1;
+    this._narrativeDmgTimer = 0;
+    this._speedMult = 1;
+    this._speedModTimer = 0;
+    this._narrativeFlash = null; // { text, color, timer } HUD flash on choice
 
     // Persisted hive-return count drives the enemy respawn timer.
     this.hiveReturnCount = this.progress.hiveReturnCount || 0;
@@ -170,14 +196,19 @@ export default class PollinatorGame {
   _resize() {
     const wasMobile = this.isMobile;
     this.isMobile = window.innerWidth < MOBILE_BREAKPOINT;
-    const dims = this.isMobile ? MOBILE : DESKTOP;
-    this.LW = dims.w;
-    this.LH = dims.h;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    // Use the actual rendered canvas dimensions (which now respect safe-area via
+    // CSS dvh + env() insets) instead of hardcoded constants. This keeps the
+    // logical canvas matched to exactly what the user sees, so the joystick and
+    // hive UI never sit behind the browser's bottom chrome. Fall back to the
+    // window size if the rect isn't laid out yet (avoids a 0×0 black canvas).
+    const rect = this.canvas.getBoundingClientRect();
+    this.LW = Math.round(rect.width) || window.innerWidth;
+    this.LH = Math.round(rect.height) || window.innerHeight;
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2); // cap at 2× for perf
 
     this.canvas.width = Math.round(this.LW * this.dpr);
     this.canvas.height = Math.round(this.LH * this.dpr);
-    // CSS sizing is handled by the page stylesheet (fills the viewport).
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     this.camera.resize(this.LW, this.LH);
@@ -197,6 +228,7 @@ export default class PollinatorGame {
   }
 
   _handleKeyDown(e) {
+    this.audio.init(); // first user gesture unlocks the AudioContext
     const k = e.key.toLowerCase();
     if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) {
       e.preventDefault();
@@ -210,6 +242,7 @@ export default class PollinatorGame {
   }
 
   _handleMouseDown(e) {
+    this.audio.init(); // first user gesture unlocks the AudioContext
     const { x, y } = this._toLogical(e.clientX, e.clientY);
     this._handlePointer(x, y);
   }
@@ -222,6 +255,15 @@ export default class PollinatorGame {
 
   _handleTouchStart(e) {
     e.preventDefault();
+    this.audio.init(); // first user gesture unlocks the AudioContext
+
+    // The mute button overlays the joystick layer, so check it first on mobile.
+    const first = e.changedTouches[0];
+    if (first) {
+      const fp = this._toLogical(first.clientX, first.clientY);
+      if ((this.state === 'PLAYING' || this.state === 'HIVE') && this._hitMute(fp.x, fp.y)) return;
+    }
+
     if (this.state === 'PLAYING' && this.isMobile) {
       for (const t of e.changedTouches) {
         const p = this._toLogical(t.clientX, t.clientY);
@@ -251,8 +293,21 @@ export default class PollinatorGame {
     }
   }
 
+  // Toggle mute if (x,y) is inside the HUD mute button. Returns true on hit.
+  _hitMute(x, y) {
+    const r = this._muteBtnRect;
+    if (!r) return false;
+    if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+      this.audio.toggleMute();
+      return true;
+    }
+    return false;
+  }
+
   // routes a click/tap based on the current top-level state
   _handlePointer(x, y) {
+    // Mute button is live whenever the HUD is on screen (PLAYING / HIVE).
+    if ((this.state === 'PLAYING' || this.state === 'HIVE') && this._hitMute(x, y)) return;
     if (this.state === 'START') {
       this._goToBiomeSelect();
     } else if (this.state === 'BIOME_SELECT') {
@@ -261,6 +316,14 @@ export default class PollinatorGame {
     } else if (this.state === 'HIVE') {
       const intent = this.store.hitTest(x, y);
       if (intent) this._handleStoreIntent(intent);
+    } else if (this.state === 'EVENT') {
+      const idx = this.eventUI.hitTest(x, y);
+      if (idx != null && this.narrative.hasActiveEvent()) {
+        const consequence = this.narrative.resolveChoice(idx);
+        this._applyNarrativeConsequence(consequence);
+        this.state = 'PLAYING';
+        this.bee.setFlying();
+      }
     } else if (this.state === 'GAMEOVER') {
       const intent = this.gameOver.hitTest(x, y);
       if (intent) this._handleGameOverIntent(intent);
@@ -291,6 +354,16 @@ export default class PollinatorGame {
     this._rainActive = false;
     this._flash = { alpha: 0, timer: 0, duration: 0 };
     this.joystick.reset();
+
+    // Reset the narrative layer and all narrative modifiers for the new run.
+    this.narrative = new NarrativeEngine();
+    this._pollenMultiplier = 1;
+    this._pollenModTimer = 0;
+    this._narrativeDmgMult = 1;
+    this._narrativeDmgTimer = 0;
+    this._speedMult = 1;
+    this._speedModTimer = 0;
+    this._narrativeFlash = null;
     // Fog and hiveReturnCount persist across runs within a session.
 
     this._spawnWorld();
@@ -304,6 +377,8 @@ export default class PollinatorGame {
         return new Moth(x, y, upgrades);
       case 'locust':
         return new Locust(x, y, upgrades);
+      case 'hornet':
+        return new Hornet(x, y, upgrades);
       default:
         return new Bee(x, y, upgrades);
     }
@@ -418,6 +493,12 @@ export default class PollinatorGame {
       this._updatePlaying(dt);
     } else if (this.state === 'HIVE') {
       if (this._pendingEscape) this._exitHive();
+    } else if (this.state === 'EVENT') {
+      // The world is paused while the event shows. If the API call failed
+      // (no event arrived and nothing is in flight), resume the field silently.
+      if (!this.narrative.hasActiveEvent() && !this.narrative.isLoading()) {
+        this.state = 'PLAYING';
+      }
     } else if (this.state === 'GAMEOVER') {
       // input-driven only
     }
@@ -454,8 +535,10 @@ export default class PollinatorGame {
     const collectedBefore = bee.collectedCount;
 
     // Weather: storm doubles down on damage (×1.5) via the bee's multiplier.
+    // A narrative damage_modifier (if active) stacks on top of the weather.
     this._rainActive = this.meadow.rain.active;
-    bee.weatherMultiplier = this._rainActive ? 1.5 : 1;
+    const narrativeDmg = this._narrativeDmgTimer > 0 ? this._narrativeDmgMult : 1;
+    bee.weatherMultiplier = (this._rainActive ? 1.5 : 1) * narrativeDmg;
 
     // Combo decay, then expose the current multiplier so collections this frame
     // pick it up at the moment of pickup.
@@ -487,14 +570,32 @@ export default class PollinatorGame {
     const attackPressed = this.isMobile ? this.joystick.pollAttack() : this._pendingAttack;
     const healPressed = this.isMobile ? this.joystick.pollHeal() : this._pendingHeal;
 
+    // Snapshot for audio: whether an attack will actually fire this frame, and
+    // total enemy HP so we can detect a landed hit afterward.
+    const attackWillFire = attackPressed && bee.canAttack();
+    const enemyHpBefore = this._sumEnemyHp();
+
+    // A narrative speed_modifier scales the movement intent (the crafts derive
+    // velocity from moveVec × BASE_SPEED, so scaling the vector scales speed).
+    const speedMult = this._speedModTimer > 0 ? this._speedMult : 1;
+    const baseMove = this._movementVector();
+    const moveVec = speedMult === 1 ? baseMove : { x: baseMove.x * speedMult, y: baseMove.y * speedMult };
+
     bee.update(dt, {
-      moveVec: this._movementVector(),
+      moveVec,
       attackPressed,
       healPressed,
       meadow: this.meadow,
       queryEnemies,
       effects: this.effects,
     });
+
+    // Hornet: advance and collide its in-flight projectiles against live enemies
+    // (full flat damage on first contact) using the same spatial-grid query.
+    if (bee.craftType === 'hornet') bee.updateProjectiles(dt, queryEnemies);
+
+    if (attackWillFire) this.audio.playAttackDash();
+    if (this._sumEnemyHp() < enemyHpBefore) this.audio.playHitLanded();
 
     // Persist healing-item consumption (they're a saved, purchasable stock).
     if (bee.healingItems !== this.progress.upgrades.healingItems) {
@@ -537,6 +638,7 @@ export default class PollinatorGame {
 
     // Pollen.
     for (const p of this.pollen) p.update(dt, bee, this.time);
+    for (const p of this.pollen) if (p.collected) this.audio.playCollect(p.type);
     this.pollen = this.pollen.filter((p) => !p.collected);
 
     // Power-up plant recharge.
@@ -551,16 +653,58 @@ export default class PollinatorGame {
     if (bee.hp < hpBefore) {
       this.comboCount = 0;
       this.comboTimer = 0;
+      this.audio.playHitReceived();
     }
 
     // Heal-flash fade.
     if (this._flash.timer > 0) this._flash.timer -= dt;
 
+    // Narrative modifier timers (reset to neutral on expiry) + flash fade.
+    if (this._pollenModTimer > 0) {
+      this._pollenModTimer -= dt;
+      if (this._pollenModTimer <= 0) this._pollenMultiplier = 1;
+    }
+    if (this._narrativeDmgTimer > 0) {
+      this._narrativeDmgTimer -= dt;
+      if (this._narrativeDmgTimer <= 0) this._narrativeDmgMult = 1;
+    }
+    if (this._speedModTimer > 0) {
+      this._speedModTimer -= dt;
+      if (this._speedModTimer <= 0) this._speedMult = 1;
+    }
+    if (this._narrativeFlash && this._narrativeFlash.timer > 0) {
+      this._narrativeFlash.timer -= dt;
+      if (this._narrativeFlash.timer <= 0) this._narrativeFlash = null;
+    }
+
     // Death → game over (after a short beat).
     if (bee.isDead()) {
+      if (this._deathTimer === 0) this.audio.playDeath();
       this._deathTimer += dt;
       if (this._deathTimer > 1.1) this._triggerGameOver();
     }
+  }
+
+  /** Sum of every enemy's current HP (used to detect a landed player hit). */
+  _sumEnemyHp() {
+    let sum = 0;
+    for (const e of this.enemies) sum += e.hp;
+    return sum;
+  }
+
+  /** Active narrative-modifier status tags for the HUD (Part 5C). */
+  _activeModifierTags() {
+    const tags = [];
+    if (this._pollenModTimer > 0) {
+      tags.push({ label: `POLLEN ×${this._pollenMultiplier.toFixed(1)}`, color: COLORS.gold });
+    }
+    if (this._narrativeDmgTimer > 0) {
+      tags.push({ label: `DMG ×${this._narrativeDmgMult.toFixed(1)}`, color: COLORS.crimson });
+    }
+    if (this._speedModTimer > 0) {
+      tags.push({ label: `SPEED ×${this._speedMult.toFixed(1)}`, color: '#E0A030' });
+    }
+    return tags;
   }
 
   _updateLanding(dt) {
@@ -613,6 +757,7 @@ export default class PollinatorGame {
   }
 
   _activatePowerUp(plant) {
+    this.audio.playPowerUpActivate();
     const def = POWERUP_DEFS[plant.type];
 
     // Rare one-use plants resolve instantly rather than granting a timed buff.
@@ -659,18 +804,37 @@ export default class PollinatorGame {
 
   _enterHive() {
     this.state = 'HIVE';
+    this.audio.playHiveEnter();
     this.bee.setDocked();
     this.bee.hp = this.bee.maxHp; // full heal on hive return
     this.hiveReturnCount += 1; // drives enemy respawn timing
     this._save();
     this.store.open();
+
+    // Kick off the narrative API call now so it resolves while the player is
+    // spending pollen — by the time they Fly Out the event is usually ready.
+    this.narrative.onHiveEnter({
+      pollenBanked: this.runBanked,
+      hp: this.bee.hp,
+      maxHp: this.bee.maxHp,
+      craft: this.progress.upgrades.activeCraft || 'bee',
+    });
   }
 
   _exitHive() {
     this._maybeSwapCraft();
-    this.state = 'PLAYING';
     this.bee.setFlying();
+    const fromFieldStore = this._fieldStore;
     this._fieldStore = false;
+
+    // A narrative event only fires after a real hive dock (onHiveEnter ran).
+    // If one is ready or still resolving, show it before returning to the field.
+    if (!fromFieldStore && this.narrative.onHiveExit()) {
+      this.audio.playEventTrigger();
+      this.state = 'EVENT';
+    } else {
+      this.state = 'PLAYING';
+    }
     // _dockArmed stays false until the bee leaves the hive zone again.
   }
 
@@ -685,6 +849,43 @@ export default class PollinatorGame {
     this.bee = this._spawnCraft(target, x, y);
     this.bee.setFlying();
     this.camera.snapTo(this.bee.x, this.bee.y);
+  }
+
+  // Apply the consequence of a resolved narrative choice. Timed modifiers set a
+  // multiplier + timer (ticked in _updatePlaying); instant ones resolve now.
+  _applyNarrativeConsequence(consequence) {
+    if (!consequence) return;
+    switch (consequence.type) {
+      case 'pollen_modifier':
+        this._pollenMultiplier = consequence.value;
+        this._pollenModTimer = consequence.duration;
+        break;
+      case 'damage_modifier':
+        this._narrativeDmgMult = consequence.value;
+        this._narrativeDmgTimer = consequence.duration;
+        break;
+      case 'heal':
+        this.bee.hp = Math.min(this.bee.maxHp, this.bee.hp + this.bee.maxHp * consequence.value);
+        break;
+      case 'speed_modifier':
+        this._speedMult = consequence.value;
+        this._speedModTimer = consequence.duration;
+        break;
+      case 'pollen_bonus': {
+        // Add common pollen one at a time so each craft's hard cap is respected.
+        let n = Math.max(0, Math.round(consequence.value));
+        while (n > 0 && this.bee.addPollen('common')) n--;
+        break;
+      }
+      default:
+        break;
+    }
+    // Brief consequence flash in the HUD (gold beneficial / crimson harmful).
+    this._narrativeFlash = {
+      text: consequence.description || '',
+      color: isBeneficialConsequence(consequence) ? COLORS.gold : COLORS.crimson,
+      timer: 4.0,
+    };
   }
 
   // ------------------------------------------------------------ hive economy
@@ -724,8 +925,12 @@ export default class PollinatorGame {
   }
 
   _deposit() {
-    const amount = this.bee.getCarriedTotal(); // includes combo bonus
-    if (amount <= 0) return;
+    const base = this.bee.getCarriedTotal(); // includes combo bonus
+    if (base <= 0) return;
+    this.audio.playPollenDeposit();
+    // A narrative pollen_modifier scales the banked yield while active.
+    const mult = this._pollenModTimer > 0 ? this._pollenMultiplier : 1;
+    const amount = Math.round(base * mult);
     this.progress.totalBanked += amount;
     this.runBanked += amount;
     this.bee.clearCarried();
@@ -817,6 +1022,8 @@ export default class PollinatorGame {
     if (intent.action === 'again') {
       this.newRun();
       this.state = 'PLAYING';
+    } else if (intent.action === 'perennial') {
+      window.open('https://jaxontravis.com/perennial', '_blank');
     } else if (intent.action === 'confirm-yes') {
       resetProgress();
       this.progress = loadProgress();
@@ -855,8 +1062,14 @@ export default class PollinatorGame {
       return;
     }
 
-    // PLAYING / HIVE / GAMEOVER all render the world first.
+    // PLAYING / HIVE / GAMEOVER / EVENT all render the world first.
     this._renderWorld(ctx);
+
+    // Narrative event overlay (renders its own dim layer over the frozen world).
+    if (this.state === 'EVENT') {
+      this.eventUI.draw(ctx, this.narrative.activeEvent, this.narrative.isLoading(), this.LW, this.LH);
+      return;
+    }
 
     // Weather overlay (screen space) sits above the world, below the HUD.
     if (this.state === 'PLAYING' || this.state === 'HIVE') {
@@ -875,6 +1088,7 @@ export default class PollinatorGame {
     }
 
     // HUD (PLAYING and HIVE).
+    this._muteBtnRect = { x: this.LW - 84, y: 18, w: 28, h: 28 };
     HUD.draw(ctx, {
       bee: this.bee,
       banked: this.progress.totalBanked,
@@ -885,9 +1099,24 @@ export default class PollinatorGame {
       combo: { count: this.comboCount, multiplier: getMultiplier(this.comboCount) },
       rainActive: this._rainActive,
       t: this.time,
+      muteState: this.audio.muted,
+      muteBtnRect: this._muteBtnRect,
+      modifiers: this._activeModifierTags(),
     });
     this._renderMinimap(ctx);
     if (this.isMobile && this.state === 'PLAYING') this.joystick.draw(ctx);
+
+    // Narrative consequence flash — centered near the bottom, above the joystick
+    // on mobile. Fades out over its 4s lifetime; color set by the consequence.
+    if (this._narrativeFlash && this._narrativeFlash.timer > 0) {
+      const alpha = Math.max(0, Math.min(1, this._narrativeFlash.timer / 4.0));
+      const fy = this.LH - (this.isMobile ? 178 : 70);
+      text(ctx, this._narrativeFlash.text, this.LW / 2, fy, {
+        fontStr: `italic ${font(FONTS.body, 13)}`,
+        color: this._narrativeFlash.color,
+        alpha,
+      });
+    }
 
     if (this.state === 'HIVE') {
       this.store.draw(ctx, {
@@ -896,6 +1125,7 @@ export default class PollinatorGame {
         upgrades: this.progress.upgrades,
         w: this.LW,
         h: this.LH,
+        isMobile: this.isMobile,
       });
     }
 

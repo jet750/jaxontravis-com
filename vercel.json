@@ -6,6 +6,9 @@
     "api/chat.js": {
       "maxDuration": 30
     },
+    "api/narrative.js": {
+      "maxDuration": 15
+    },
     "api/log-lead.js": {
       "maxDuration": 10
     },

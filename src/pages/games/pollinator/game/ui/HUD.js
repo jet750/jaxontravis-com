@@ -19,7 +19,7 @@ const COMBO_STYLES = {
 };
 
 export const HUD = {
-  draw(ctx, { bee, banked, activePowerUp, w, h, isMobile, combo, rainActive, t = 0 }) {
+  draw(ctx, { bee, banked, activePowerUp, w, h, isMobile, combo, rainActive, t = 0, muteState = false, muteBtnRect = null, modifiers = [] }) {
     // ---- Health bar (top-left) ----
     const hx = 16;
     const hy = 26;
@@ -90,6 +90,18 @@ export const HUD = {
         color: style.color,
       });
       ctx.restore();
+      warnY += 20;
+    }
+
+    // ---- Active narrative-modifier tags (gold/crimson/amber, color-coded) ----
+    if (modifiers && modifiers.length) {
+      for (const m of modifiers) {
+        text(ctx, m.label, cx, warnY, {
+          fontStr: font(FONTS.mono, 11, '700'),
+          color: m.color,
+        });
+        warnY += 16;
+      }
     }
 
     // ---- Active power-up slot (top-right) ----
@@ -112,6 +124,48 @@ export const HUD = {
         fontStr: font(FONTS.body, 10),
         color: rgba(COLORS.ink, 0.6),
       });
+    }
+
+    // ---- Mute toggle (top-right, beside the power-up slot) ----
+    if (muteBtnRect) {
+      const m = muteBtnRect;
+      panel(ctx, m.x, m.y, m.w, m.h, { fill: rgba(COLORS.obsidian, 0.2), stroke: COLORS.ink, lineWidth: 1.5, radius: 6 });
+      const mcx = m.x + m.w / 2;
+      const mcy = m.y + m.h / 2;
+      ctx.save();
+      // Speaker body.
+      ctx.fillStyle = COLORS.ink;
+      ctx.strokeStyle = COLORS.ink;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(mcx - 7, mcy - 3);
+      ctx.lineTo(mcx - 3, mcy - 3);
+      ctx.lineTo(mcx + 1, mcy - 6);
+      ctx.lineTo(mcx + 1, mcy + 6);
+      ctx.lineTo(mcx - 3, mcy + 3);
+      ctx.lineTo(mcx - 7, mcy + 3);
+      ctx.closePath();
+      ctx.fill();
+      if (muteState) {
+        // Crimson X when muted.
+        ctx.strokeStyle = COLORS.crimson;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(mcx + 3, mcy - 5);
+        ctx.lineTo(mcx + 9, mcy + 5);
+        ctx.moveTo(mcx + 9, mcy - 5);
+        ctx.lineTo(mcx + 3, mcy + 5);
+        ctx.stroke();
+      } else {
+        // Two sound-wave arcs when audible.
+        ctx.beginPath();
+        ctx.arc(mcx + 1, mcy, 4, -Math.PI / 3, Math.PI / 3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(mcx + 1, mcy, 7, -Math.PI / 3, Math.PI / 3);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     // ---- Healing items (bottom-left) ----

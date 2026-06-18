@@ -92,6 +92,14 @@ export const StartScreen = {
     ctx.restore();
 
     y += 6;
+
+    // Primes the user for the audio init that happens on first interaction.
+    text(ctx, 'Tap anywhere to enable audio', cx, y, {
+      fontStr: font(FONTS.body, 11),
+      color: rgba(COLORS.ink, 0.5),
+    });
+    y += 24;
+
     if (highScore > 0) {
       text(ctx, `Your best: ${highScore} pollen banked`, cx, y, {
         fontStr: font(FONTS.body, 13, '600'),

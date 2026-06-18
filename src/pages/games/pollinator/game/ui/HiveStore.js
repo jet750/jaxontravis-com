@@ -21,6 +21,7 @@ export const CRAFTS = [
   { id: 'bee', name: 'Bee', hp: '100–150', speed: 180, capacity: 10, cost: 0, special: 'Rear-sting dash. Balanced collector with the highest capacity.' },
   { id: 'moth', name: 'Moth', hp: 80, speed: 220, capacity: 5, cost: 50, special: 'Frontal consume pulse. Fast and frail; clears mobile enemies.' },
   { id: 'locust', name: 'Locust', hp: 120, speed: 140, capacity: 5, cost: 80, special: 'AoE chomp. Slow tank; the only craft that kills Carnivorous Plants.' },
+  { id: 'hornet', name: 'Hornet', hp: 90, speed: 200, capacity: 8, cost: 120, special: 'Projectile sting. Ranged specialist; fires from afar.' },
 ];
 
 export class HiveStore {
@@ -51,7 +52,7 @@ export class HiveStore {
     return null;
   }
 
-  draw(ctx, { bee, banked, upgrades, w, h }) {
+  draw(ctx, { bee, banked, upgrades, w, h, isMobile }) {
     this._buttons = [];
 
     // dim backdrop
@@ -59,10 +60,15 @@ export class HiveStore {
     ctx.fillStyle = rgba(COLORS.obsidian, 0.82);
     ctx.fillRect(0, 0, w, h);
 
+    // Reserve a bottom safe zone on mobile so the whole panel — including the
+    // bottom-anchored Fly Out button — stays clear of the browser nav bar / home
+    // indicator. The button remains panel-relative, so it never detaches or
+    // overlaps content on large desktop screens.
+    const safeBottom = isMobile ? 80 : 20;
     const pw = Math.min(w - 32, 560);
-    const ph = Math.min(h - 32, 600);
+    const ph = Math.min(h - 32 - safeBottom, 600);
     const px = (w - pw) / 2;
-    const py = (h - ph) / 2;
+    const py = (h - safeBottom - ph) / 2;
     panel(ctx, px, py, pw, ph, { fill: COLORS.parchment, stroke: COLORS.ink, lineWidth: 3, radius: 14 });
 
     text(ctx, 'THE HIVE', px + pw / 2, py + 30, {
@@ -256,13 +262,22 @@ export class HiveStore {
     const unlocked = upgrades.craftsUnlocked || [];
     const active = upgrades.activeCraft || 'bee';
 
+    // 2-column grid so all four crafts stay readable on phone-width panels.
+    const cols = 2;
+    const rows = Math.ceil(CRAFTS.length / cols);
     const gap = 10;
-    const cardW = (pw - 48 - gap * 2) / 3;
-    const cardY = contentY + 10;
-    const cardH = (py + ph - 64) - cardY - 8;
+    const gridX = px + 24;
+    const gridW = pw - 48;
+    const cardW = (gridW - gap * (cols - 1)) / cols;
+    const gridY = contentY + 10;
+    const gridH = py + ph - 64 - gridY - 8;
+    const cardH = (gridH - gap * (rows - 1)) / rows;
 
     CRAFTS.forEach((craft, i) => {
-      const cardX = px + 24 + i * (cardW + gap);
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cardX = gridX + col * (cardW + gap);
+      const cardY = gridY + row * (cardH + gap);
       const isUnlocked = craft.cost === 0 || unlocked.includes(craft.id);
       const isActive = active === craft.id;
 
@@ -274,50 +289,50 @@ export class HiveStore {
       });
 
       const ccx = cardX + cardW / 2;
-      text(ctx, craft.name, ccx, cardY + 18, { fontStr: font(FONTS.title, 18, '600'), color: COLORS.ink });
+      text(ctx, craft.name, ccx, cardY + 16, { fontStr: font(FONTS.title, 17, '600'), color: COLORS.ink });
 
       // illustration
       ctx.save();
-      ctx.translate(ccx, cardY + 54);
+      ctx.translate(ccx, cardY + 44);
       this._drawCraftIcon(ctx, craft.id);
       ctx.restore();
 
       // stats
-      const statY = cardY + 84;
-      text(ctx, `HP ${craft.hp}`, ccx, statY, { fontStr: font(FONTS.body, 12), color: rgba(COLORS.ink, 0.85) });
-      text(ctx, `Speed ${craft.speed}`, ccx, statY + 15, { fontStr: font(FONTS.body, 12), color: rgba(COLORS.ink, 0.85) });
-      text(ctx, `Capacity ${craft.capacity}`, ccx, statY + 30, { fontStr: font(FONTS.body, 12), color: rgba(COLORS.ink, 0.85) });
+      const statY = cardY + 70;
+      text(ctx, `HP ${craft.hp}`, ccx, statY, { fontStr: font(FONTS.body, 11), color: rgba(COLORS.ink, 0.85) });
+      text(ctx, `Speed ${craft.speed}`, ccx, statY + 14, { fontStr: font(FONTS.body, 11), color: rgba(COLORS.ink, 0.85) });
+      text(ctx, `Capacity ${craft.capacity}`, ccx, statY + 28, { fontStr: font(FONTS.body, 11), color: rgba(COLORS.ink, 0.85) });
 
       // special ability (wrapped italic)
-      this._wrapText(ctx, craft.special, ccx, statY + 52, cardW - 16, 13, {
-        fontStr: `italic ${font(FONTS.body, 11)}`,
+      this._wrapText(ctx, craft.special, ccx, statY + 48, cardW - 16, 12, {
+        fontStr: `italic ${font(FONTS.body, 10)}`,
         color: rgba(COLORS.ink, 0.7),
       });
 
       // action control (bottom of card)
-      const aw = cardW - 24;
-      const ax = cardX + 12;
-      const ayy = cardY + cardH - 38;
+      const aw = cardW - 20;
+      const ax = cardX + 10;
+      const ayy = cardY + cardH - 32;
       if (isActive) {
-        panel(ctx, ax, ayy, aw, 26, { fill: rgba(COLORS.gold, 0.3), stroke: COLORS.gold, lineWidth: 1.5, radius: 6 });
-        text(ctx, 'ACTIVE', ax + aw / 2, ayy + 13, { fontStr: font(FONTS.body, 12, '700'), color: COLORS.ink });
+        panel(ctx, ax, ayy, aw, 24, { fill: rgba(COLORS.gold, 0.3), stroke: COLORS.gold, lineWidth: 1.5, radius: 6 });
+        text(ctx, 'ACTIVE', ax + aw / 2, ayy + 12, { fontStr: font(FONTS.body, 12, '700'), color: COLORS.ink });
       } else if (isUnlocked) {
-        panel(ctx, ax, ayy, aw, 26, { fill: rgba(COLORS.green, 0.3), stroke: COLORS.ink, lineWidth: 1.4, radius: 6 });
-        text(ctx, 'SWITCH', ax + aw / 2, ayy + 13, { fontStr: font(FONTS.body, 12, '700'), color: COLORS.ink });
-        this._btn('switch-craft', ax, ayy, aw, 26, craft.id);
+        panel(ctx, ax, ayy, aw, 24, { fill: rgba(COLORS.green, 0.3), stroke: COLORS.ink, lineWidth: 1.4, radius: 6 });
+        text(ctx, 'SWITCH', ax + aw / 2, ayy + 12, { fontStr: font(FONTS.body, 12, '700'), color: COLORS.ink });
+        this._btn('switch-craft', ax, ayy, aw, 24, craft.id);
       } else {
         const canAfford = banked >= craft.cost;
-        panel(ctx, ax, ayy, aw, 26, {
+        panel(ctx, ax, ayy, aw, 24, {
           fill: canAfford ? rgba(COLORS.gold, 0.3) : rgba(COLORS.ink, 0.05),
           stroke: canAfford ? COLORS.ink : rgba(COLORS.ink, 0.3),
           lineWidth: canAfford ? 1.6 : 1,
           radius: 6,
         });
-        text(ctx, `${craft.cost} ◆`, ax + aw / 2, ayy + 13, {
+        text(ctx, `${craft.cost} ◆`, ax + aw / 2, ayy + 12, {
           fontStr: font(FONTS.mono, 12, '700'),
           color: canAfford ? COLORS.ink : rgba(COLORS.ink, 0.4),
         });
-        if (canAfford) this._btn('buy-craft', ax, ayy, aw, 26, craft.id);
+        if (canAfford) this._btn('buy-craft', ax, ayy, aw, 24, craft.id);
       }
     });
   }
@@ -353,6 +368,31 @@ export class HiveStore {
       ctx.fillStyle = '#C8B89A';
       ctx.fill();
       ctx.stroke();
+    } else if (id === 'hornet') {
+      // Narrow angular wings + a sleek striped body — the aggressive silhouette.
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(side * 3, -2);
+        ctx.lineTo(side * 13, -4);
+        ctx.lineTo(side * 11, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 6, 13, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#8B6914';
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = rgba(COLORS.ink, 0.85);
+      ctx.lineWidth = 1;
+      for (const oy of [-3, 1, 5]) {
+        ctx.beginPath();
+        ctx.moveTo(-4, oy);
+        ctx.lineTo(4, oy);
+        ctx.stroke();
+      }
     } else {
       ctx.fillStyle = 'rgba(120,140,90,0.45)';
       for (const side of [-1, 1]) {

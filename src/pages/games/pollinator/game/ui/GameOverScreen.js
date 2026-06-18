@@ -116,7 +116,15 @@ export class GameOverScreen {
       color: COLORS.ink,
     });
     this._btn('again', bx, y, bw, 42);
-    y += 58;
+    y += 50;
+
+    // Perennial cross-link — opens the card-game page in a new tab.
+    text(ctx, 'Explore the Perennial card game →', cx, y, {
+      fontStr: font(FONTS.body, 12),
+      color: COLORS.gold,
+    });
+    this._btn('perennial', cx - 130, y - 12, 260, 24);
+    y += 38;
 
     // New Game (full reset)
     text(ctx, 'New Game (resets all progress)', cx, y, {
@@ -124,6 +132,12 @@ export class GameOverScreen {
       color: rgba(COLORS.parchment, 0.55),
     });
     this._btn('newgame', cx - 120, y - 12, 240, 24);
+
+    // Sprint attribution — the portfolio signal, visible in end-screen shots.
+    text(ctx, 'Built in 2 days · The Great Pollinator v1.0 · jaxontravis.com', cx, h - 24, {
+      fontStr: font(FONTS.body, 10),
+      color: 'rgba(240,235,226,0.45)',
+    });
 
     // Confirm dialog overlay
     if (this.confirming) {

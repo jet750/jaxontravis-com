@@ -16,8 +16,8 @@ const DEFAULT_UPGRADES = {
   damageReduction: 0, // ×0.95 per level, max 5
   attackBoost: 0, // +0.05 per level, max 5 (cap ×1.25)
   healingItems: 0, // consumables currently held, max 3
-  craftsUnlocked: [], // array of unlocked craft IDs, e.g. ['moth', 'locust']
-  activeCraft: 'bee', // currently selected craft: 'bee' | 'moth' | 'locust'
+  craftsUnlocked: [], // array of unlocked craft IDs, e.g. ['moth', 'locust', 'hornet']
+  activeCraft: 'bee', // currently selected craft: 'bee' | 'moth' | 'locust' | 'hornet'
 };
 
 function readNumber(key, fallback) {

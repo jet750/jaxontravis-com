@@ -29,14 +29,16 @@ export class VirtualJoystick {
     this.h = 0;
   }
 
+  // Offsets include a 16px bottom inset on top of the original gaps so there is
+  // always visible breathing room above any remaining system UI.
   _baseCenter() {
-    return { x: 95, y: this.h - 95 };
+    return { x: 95, y: this.h - 111 };
   }
   _attackCenter() {
-    return { x: this.w - 75, y: this.h - 95 };
+    return { x: this.w - 75, y: this.h - 111 };
   }
   _healCenter() {
-    return { x: this.w / 2, y: this.h - 50 };
+    return { x: this.w / 2, y: this.h - 66 };
   }
 
   setViewport(w, h) {
